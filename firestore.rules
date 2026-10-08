@@ -1,0 +1,39 @@
+// الصق ده في Firebase ← Firestore Database ← Rules ← Publish
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // الأدمن = أي حساب ليه مستند في مجموعة admins (اسم المستند = الـ UID)
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow create, delete: if isAdmin();
+    }
+
+    // الموقع بيقرا دول، والأدمن بس هو اللي يعدّل
+    match /products/{id}   { allow read: if true; allow write: if isAdmin(); }
+    match /categories/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /branches/{id}   { allow read: if true; allow write: if isAdmin(); }
+    match /offers/{id}     { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{id}   { allow read: if true; allow write: if isAdmin(); }
+
+    // العميل يسجّل نفسه (رقم الموبايل بس)، والأدمن يشوف الكل
+    match /users/{uid} {
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow read:   if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // العميل يعمل طلب باسمه بس ويتابع طلباته، والأدمن يدير الكل
+    match /orders/{id} {
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.status == 'جديدة';
+      allow read:   if isAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+  }
+}

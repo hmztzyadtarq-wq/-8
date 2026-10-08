@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!-- حلو الملك — الموقع. الملفات: index.html (الهيكل) + style.css (التنسيق) + script.js (كل الكود) -->
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>حلو الملك</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="upd" hidden>فيه تحديثات جديدة في المتجر — اضغط للتحديث</div>
+<div id="top"></div>      <!-- الشريط الذهبي + الهيدر + القائمة (بيتعمل من script.js) -->
+<main id="view"></main>   <!-- محتوى الصفحة الحالية -->
+<footer id="foot"></footer>
+<div id="drawer"></div>   <!-- النافذة الجانبية: دخول / حساب / اختيار الفرع -->
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+/* ---------- إعدادات Firebase ---------- */
+firebase.initializeApp({
+  apiKey: "AIzaSyCel1QXKeChW1zVhQn4I8k8lVrD5c-OX9s",
+  authDomain: "hellw-elmalek.firebaseapp.com",
+  projectId: "hellw-elmalek",
+  storageBucket: "hellw-elmalek.firebasestorage.app",
+  messagingSenderId: "742581978284",
+  appId: "1:742581978284:web:81bc15b3a2168b5ecb4b09"
+});
+const auth = firebase.auth();                               // تسجيل الدخول
+const db = firebase.firestore();                            // قاعدة البيانات
+const TS = firebase.firestore.FieldValue.serverTimestamp;   // وقت السيرفر
+// Firebase Auth بيحتاج إيميل، فرقم الموبايل بيتحوّل لإيميل داخلي (العميل مش بيشوفه)
+const phoneEmail = (p) => p + '@helwelmalek.app';
+
+/* 1) نجيب كل البيانات من Firebase (لو مردش في 6 ثواني بنكمّل بصفحة فاضية)
+   2) نحمّل script.js
+   3) نراقب settings/meta: الأدمن بيحدّثه مع كل تغيير فيظهر شريط التحديث للزوار */
+(function () {
+  const rows = (q) => q.docs.map(d => ({ id: d.id, ...d.data() }));
+  const one = (r) => r.exists ? r.data() : {};
+  const load = Promise.all([
+    db.collection('categories').orderBy('order').get(),
+    db.collection('products').orderBy('order').get(),
+    db.collection('branches').get(),
+    db.collection('settings').doc('home').get(),
+    db.collection('settings').doc('promos').get(),
+    db.collection('settings').doc('brand').get()
+  ]).then(([c, p, b, h, pr, br]) => {
+    window.REMOTE = { cats: rows(c), prods: rows(p), branches: rows(b), settings: { ...one(h), promos: one(pr) }, brand: one(br) };
+  });
+  Promise.race([load, new Promise(r => setTimeout(r, 6000))]).catch(() => {}).then(() => {
+    const s = document.createElement('script'); s.src = 'script.js'; document.body.appendChild(s);
+    let first = true;
+    db.collection('settings').doc('meta').onSnapshot(() => {
+      if (first) { first = false; return; }
+      const u = document.getElementById('upd'); u.hidden = false; u.onclick = () => location.reload();
+    }, () => {});
+  });
+})();
+</script>
+</body>
+</html>
