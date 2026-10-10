@@ -15,8 +15,6 @@ function toast(m) {                                   // رسالة صغيرة �
 /* ======== 2) الأيقونات (SVG) ======== */
 const ic = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const I = {
-  menu: ic('<path d="M4 6h16M4 12h16M4 18h16"/>'),
-  chev: ic('<path d="m15 6-6 6 6 6"/>'),
   cookie: ic('<path d="M12 3a9 9 0 1 0 9 9 4 4 0 0 1-4.5-4.5A4 4 0 0 1 12 3z"/><circle cx="9" cy="10" r=".9"/><circle cx="14" cy="14.5" r=".9"/><circle cx="8.5" cy="15" r=".9"/><circle cx="14.5" cy="9.5" r=".9"/>'),
   cake: ic('<path d="M3 20h18v-7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2zM3 15.5c3 2 6-2 9 0s6-2 9 0M12 11V7.5M12 3c1.2 1.2 1.2 2.4 0 3.2-1.2-.8-1.2-2 0-3.2z"/>'),
   gift: ic('<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12M12 8C10 4 6 5 7 8c.6 1.5 3 1 5 0zM12 8c2-4 6-3 5 0-.6 1.5-3 1-5 0z"/>'),
@@ -104,7 +102,6 @@ function head() {
   $('#top').innerHTML = `
   <div class="topbar"><span>${I.phone} اتصل بنا: ${esc(HOT)}</span><span>${I.truck} مدة التوصيل من 45 إلى 60 دقيقة</span><span>${I.card} طرق دفع سهلة</span></div>
   <header class="header"><div class="wrap hrow">
-    <button class="burger" data-act="menu" aria-label="menu">${I.menu}</button>
     <a class="logo" href="#/">${logoHtml()}</a>
     <form class="search" id="sf"><input id="q" placeholder="ابحث عن..." value="${esc(qv)}"><button aria-label="search">${I.search}</button></form>
     <div class="acts">
@@ -142,9 +139,6 @@ function card(p) {
     <button class="cb" data-add="${p.id}" ${out(p) ? 'disabled' : ''} aria-label="add">${I.cartp}</button></div></div></article>`;
 }
 
-/* كاروسيل أفقي: صف منتجات بيتحرك بالجنب (سحب بالصباع أو الأسهم) */
-const carousel = (a) => `<div class="car"><button class="cn p" data-act="cnav" data-d="-1" aria-label="prev">${I.chev}</button><div class="cs">${a.map(card).join('')}</div><button class="cn n" data-act="cnav" data-d="1" aria-label="next">${I.chev}</button></div>`;
-
 /* ======== 7) الراوتر والعرض ======== */
 function render(html, keep) {
   clearInterval(slideT); $('#view').innerHTML = html; tr($('#view'));
@@ -162,18 +156,6 @@ function route() {
 window.addEventListener('hashchange', route);
 
 /* ---------- الرئيسية ---------- */
-const FLAT_ROWS = 4;                                   // أقصى عدد صفوف للمنتجات اللي من غير عنوان (3 أو 4)
-function flatRows() {                                  // كل المنتجات مقسّمة على صفوف من غير عنوان
-  const n = PRODS.length; if (!n) return '';
-  const k = Math.min(FLAT_ROWS, Math.max(1, Math.floor(n / 3))), sz = Math.ceil(n / k);
-  return Array.from({ length: k }, (_, i) => PRODS.slice(i * sz, (i + 1) * sz)).filter(r => r.length).map(r => `<section class="wrap rowsec nt">${carousel(r)}</section>`).join('');
-}
-let slideI = 0;                                        // رقم البانر الظاهر دلوقتي
-function fitSlider() {                                 // طول البانر = طول الصورة الظاهرة بالظبط (من غير قص)
-  /* المقاس ثابت من style.css (aspect-ratio 5:2) فمفيش حاجة تتضبط هنا */
-}
-window.addEventListener('resize', fitSlider);
-document.addEventListener('load', (e) => { if (e.target.tagName === 'IMG' && e.target.closest('#slides')) fitSlider(); }, true);
 function home() {
   const bn = CFG.banners || [];
   const hero = bn.length ? `<div class="wrap"><div class="slider"><div class="slides" id="slides" style="transform:translateX(0)">${bn.map(u => `<div><img src="${esc(u)}" alt=""></div>`).join('')}</div></div>
@@ -184,7 +166,7 @@ function home() {
   const circ = [...CATS.filter(c => c.circle && !isOffersCat(c.name)), ...CATS.filter(c => c.circle && isOffersCat(c.name))];
   const cats = circ.length ? `<section class="wrap rowsec"><div class="rh"><h2>تسوق حسب القسم</h2></div><div class="cats">${circ.map(c =>
     `<a class="cc" href="${navHref(c)}"><span class="ci">${c.img ? `<img src="${esc(c.img)}" alt="">` : I[catIco(c.name)]}</span>${esc(c.name)}</a>`).join('')}</div></section>` : '';
-  const rows = SEC.map(([k, t]) => { const it = PRODS.filter(p => p.section === k); return it.length ? `<section class="wrap rowsec"><div class="rh"><h2>${t}</h2><a href="#/sec/${enc(k)}">عرض الكل</a></div>${carousel(it.slice(0, 12))}</section>` : ''; });
+  const rows = SEC.map(([k, t]) => { const it = PRODS.filter(p => p.section === k); return it.length ? `<section class="wrap rowsec"><div class="rh"><h2>${t}</h2><a href="#/sec/${enc(k)}">عرض الكل</a></div><div class="g5">${it.slice(0, 5).map(card).join('')}</div></section>` : ''; });
   const pr = CFG.promos || {}, off = window.OFFER1;
   const kahk = CATS.find(c => /كحك/.test(c.name));
   const promos = (pr.p1 || pr.p2 || kahk) ? `<section class="wrap promos">
@@ -192,8 +174,7 @@ function home() {
     ${pr.p2 ? `<div class="pm im"><img src="${esc(pr.p2)}" alt=""></div>` : (kahk ? `<div class="pm k"><div><h3>${esc(kahk.name)} 2026</h3><p>اطلب بدري واستلم في معادك</p><a class="gbtn" href="${navHref(kahk)}">اطلب الآن</a></div>${I.moon}</div>` : '')}</section>` : '';
   const feat = `<section class="wrap feat">${[['truck', 'توصيل سريع', 'من 45 إلى 60 دقيقة'], ['shield', 'مكونات أصلية', 'زبدة وفواكه طازة'], ['card', 'دفع سهل', 'كاش عند الاستلام'], ['store', 'فروع كثير', 'اطلب من أقرب فرع ليك']].map(([i, t, s]) => `<div class="ft"><div><b>${t}</b><small>${s}</small></div>${I[i]}</div>`).join('')}</section>`;
   if (!PRODS.length && !CATS.length) return render(`<div class="wrap empty"><h2>المتجر قيد التجهيز</h2><p>هنكون معاكم قريبًا.</p></div>`);
-  render(hero + promos + flatRows() + (rows[0] || '') + (rows[1] || '') + (rows[2] || '') + cats + feat);
-  slideI = 0; setTimeout(fitSlider, 60);
+  render(hero + cats + (rows[0] || '') + promos + feat + (rows[1] || '') + (rows[2] || ''));
   if (bn.length > 1) { let i = 0; slideT = setInterval(() => ACT.dot({ dataset: { i: i = (i + 1) % bn.length } }), 5000); }
   if (!window.OFFER1 && !window.OFFER_TRIED) { window.OFFER_TRIED = 1; db.collection('offers').where('active', '==', true).limit(1).get().then(s => { if (s.docs[0]) { window.OFFER1 = s.docs[0].data(); if (location.hash.replace('#', '') === '' || location.hash === '#/') home(); } }).catch(() => {}); }
 }
@@ -258,7 +239,7 @@ function product(id) {
     <div class="inf"><span>${I.truck} توصيل من 45 لـ 60 دقيقة</span><span>${I.shield} مكونات طازة</span></div></div></div>
    <div class="tabs"><nav>${[['d', 'الوصف'], ['i', 'المكونات'], ['r', 'التقييمات']].map(([k, t]) => `<button class="${PD.tab === k ? 'on' : ''}" data-act="tab" data-v="${k}">${t}</button>`).join('')}</nav>
     <p>${esc(PD.tab === 'd' ? (p.desc || 'لا يوجد وصف.') : PD.tab === 'i' ? (p.ingredients || 'لا توجد مكونات مسجّلة.') : (p.reviews > 0 ? p.reviews + ' تقييم' : 'لا توجد تقييمات حتى الآن.'))}</p></div>
-   ${sim.length ? `<section class="rowsec"><div class="rh"><h2>منتجات مشابهة</h2></div>${carousel(sim)}</section>` : ''}</div>`, PD.keep);
+   ${sim.length ? `<section class="rowsec"><div class="rh"><h2>منتجات مشابهة</h2></div><div class="g5">${sim.map(card).join('')}</div></section>` : ''}</div>`, PD.keep);
   PD.keep = false;
 }
 
@@ -325,20 +306,12 @@ async function confirmOrder() {
     gov: pick ? '' : co.gov, area: pick ? '' : co.area.trim(), addr: pick ? '' : co.addr.trim(),
     items: ls.map(l => ({ id: l.id, size: l.size, name: l.name, cat: l.p.cat, price: l.price, qty: l.qty })),
     subtotal: sub, discount: d, code: co.offer ? co.offer.code : '', fee, total: Math.max(0, sub - d + fee), pay: 'cash', status: 'جديدة', orderNo, createdAt: TS() };
-  let w = null; if (!BRAND.serverWa) { try { w = window.open('', '_blank'); } catch {} }      // بنفتح التاب وإحنا لسه في ضغطة العميل عشان المتصفح ميمنعوش
-  try { await db.collection('orders').add(order); } catch { if (w) w.close(); return err('تعذّر إرسال الطلب، حاول تاني'); }
+  try { await db.collection('orders').add(order); } catch { return err('تعذّر إرسال الطلب، حاول تاني'); }
   cart = []; co.offer = null; co.code = ''; saveCart(); hasOrders = true; head();
-  const msg = [`🔔 طلب جديد #${orderNo}`, `الفرع: ${br.name}`, '',
-    ...order.items.map(i => `• ${i.name} × ${i.qty} = ${i.price * i.qty} ج.م`), '',
-    order.discount ? `خصم: -${order.discount} ج.م` : '', fee ? `رسوم التوصيل: ${fee} ج.م` : '',
-    `الإجمالي: ${order.total} ج.م (كاش)`, `الاسم: ${order.name}`, `رقم العميل: ${order.phone}`,
-    pick ? 'استلام من الفرع' : `العنوان: ${order.gov} - ${order.area} - ${order.addr}`].filter((x, i, a) => x !== '' || a[i - 1] !== '').join('\n');
-  const toWa = (p) => { let n = String(p || '').replace(/\D/g, ''); if (n.startsWith('0')) n = '20' + n.slice(1); return n; };
-  const wa = toWa(br.phone) || toWa(BRAND.adminPhone);          // رقم الفرع، ولو مفيش فرقم الأدمن العام
-  const waUrl = wa ? `https://wa.me/${wa}?text=${encodeURIComponent(msg)}` : '';
-  if (w) { if (waUrl) w.location.href = waUrl; else w.close(); }
+  const msg = `طلب جديد #${orderNo}%0A${order.items.map(i => `${i.name} × ${i.qty}`).join('%0A')}%0Aالإجمالي: ${order.total} ج.م%0Aالاسم: ${order.name}%0Aالموبايل: ${order.phone}${pick ? '%0Aاستلام من الفرع' : '%0Aالعنوان: ' + order.area + ' - ' + order.addr}`;
+  let wa = String(br.phone || '').replace(/\D/g, ''); if (wa.startsWith('0')) wa = '20' + wa.slice(1);
   render(`<div class="wrap empty"><h2>تم استلام طلبك ✓</h2><p>رقم الطلب #${orderNo} — فرع ${esc(br.name)}</p><p>هنتواصل معاك على ${esc(order.phone)}</p>
-   <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap"><a class="gbtn" href="#/track">تتبع طلبك</a>${waUrl ? `<a class="gbtn w" style="border:1px solid var(--navy)" target="_blank" rel="noopener" href="${waUrl}">ابعت تفاصيل الطلب للفرع (واتساب)</a>` : ''}</div></div>`);
+   <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap"><a class="gbtn" href="#/track">تتبع طلبك</a>${wa ? `<a class="gbtn w" style="border:1px solid var(--navy)" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${msg}">ابعت تفاصيل الطلب للفرع (واتساب)</a>` : ''}</div></div>`);
 }
 
 /* ---------- تتبع الطلب (لحظي) ---------- */
@@ -352,14 +325,14 @@ function track() {
     box.innerHTML = os.length ? os.map(o => { const k = ST.indexOf(o.status);
       return `<div class="tk"><h3><span>طلب #${o.orderNo}</span><span>${fmt(o.total)} ج.م</span></h3><small>${esc(o.branchName || '')} — ${o.createdAt ? new Date(o.createdAt.seconds * 1000).toLocaleString('ar-EG') : ''}</small>
        ${o.status === 'ملغي' ? '<div class="pst"><div class="x">تم إلغاء الطلب</div></div>' : `<div class="pst">${ST.map((t, i) => `<div class="${i <= k ? 'on' : ''}">${t}</div>`).join('')}</div>`}
-       <small>${(o.items || []).map(i => esc(i.name) + ' × ' + i.qty).join(' ، ')}</small>${(() => { const b = branchOf(o.branchId); return b && b.phone ? `<div style="display:flex;gap:14px;margin-top:8px"><a class="dl" href="tel:${esc(b.phone)}">اتصل بالفرع</a><a class="dl" target="_blank" rel="noopener" href="https://wa.me/${String(b.phone).replace(/\D/g, '').replace(/^0/, '20')}?text=${encodeURIComponent('بخصوص طلب #' + o.orderNo)}">واتساب الفرع</a></div>` : ''; })()}</div>`; }).join('') : '<div class="empty"><h2>لسه معندكش طلبات</h2></div>';
+       <small>${(o.items || []).map(i => esc(i.name) + ' × ' + i.qty).join(' ، ')}</small></div>`; }).join('') : '<div class="empty"><h2>لسه معندكش طلبات</h2></div>';
     tr(box);
   }, () => { const b = $('#tl'); if (b) b.innerHTML = '<div class="empty">تعذّر تحميل الطلبات</div>'; });
 }
 
 /* ---------- فروعنا + صفحات المعلومات ---------- */
 function branchesView() {
-  render(`<div class="wrap">${crumb(['الرئيسية', '#/'], ['فروعنا'])}<div class="lh"><h1>فروعنا</h1></div>${BR.length ? BR.map(b => `<div class="tk"><h3><span>${esc(b.name)}</span></h3><small>${esc(b.area || '')}</small>${b.phone ? `<div style="display:flex;gap:14px;flex-wrap:wrap"><a class="dl" href="tel:${esc(b.phone)}">اتصال: ${esc(b.phone)}</a><a class="dl" target="_blank" rel="noopener" href="https://wa.me/${(String(b.phone).replace(/\D/g, '').replace(/^0/, '20'))}">واتساب</a></div>` : ''}</div>`).join('') : '<div class="empty">قريبًا</div>'}</div>`);
+  render(`<div class="wrap">${crumb(['الرئيسية', '#/'], ['فروعنا'])}<div class="lh"><h1>فروعنا</h1></div>${BR.length ? BR.map(b => `<div class="tk"><h3><span>${esc(b.name)}</span></h3><small>${esc(b.area || '')}</small>${b.phone ? `<div><a class="dl" href="tel:${esc(b.phone)}">${esc(b.phone)}</a></div>` : ''}</div>`).join('') : '<div class="empty">قريبًا</div>'}</div>`);
 }
 function pgView(k) {
   const P = { refund: ['سياسة الاسترجاع', 'لو في أي مشكلة في طلبك كلمنا خلال 24 ساعة من الاستلام وهنراجعها معاك.'], faq: ['الأسئلة الشائعة', 'مدة التوصيل من 45 إلى 60 دقيقة. الدفع كاش عند الاستلام حاليًا. تقدر تتابع طلبك من "تتبع الطلب".'], contact: ['اتصل بنا', 'الخط الساخن: ' + HOT] }[k];
@@ -386,13 +359,6 @@ function acctDrawer() {
 function branchDrawer() {
   $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn"><button class="dx" data-act="dclose">×</button><h2>اختر الفرع</h2><p class="dsub">اطلب من أقرب فرع ليك</p>
    ${BR.map(b => `<button class="bo ${b.id === myBranch ? 'on' : ''}" data-act="pick" data-id="${b.id}"><b>${esc(b.name)}</b><small>${esc(b.area || '')}</small></button>`).join('') || '<div class="empty">لا توجد فروع متاحة حاليًا</div>'}</div>`;
-  $('#drawer').classList.add('open'); tr($('#drawer'));
-}
-function menuDrawer() {                               // قائمة الهمبورجر (الأقسام) في الموبايل
-  $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn mn"><button class="dx" data-act="dclose">×</button><h2>القائمة</h2>
-   <a class="mi" href="#/" data-act="dclose">الرئيسية</a><a class="mi" href="#/all" data-act="dclose">المنيو</a>
-   ${CATS.map(c => `<a class="mi" href="${navHref(c)}" data-act="dclose">${esc(c.name)}</a>`).join('')}
-   <a class="mi" href="#/branches" data-act="dclose">فروعنا</a></div>`;
   $('#drawer').classList.add('open'); tr($('#drawer'));
 }
 document.addEventListener('submit', async (e) => {
@@ -427,8 +393,6 @@ auth.onAuthStateChanged(async (u) => {
 
 /* ======== 9) الأوامر (كل الأزرار) ======== */
 const ACT = {
-  menu: menuDrawer,
-  cnav: (el) => { const c = el.parentElement.querySelector('.cs'); c.scrollBy({ left: +el.dataset.d * c.clientWidth * .8 * (lang === 'ar' ? -1 : 1), behavior: 'smooth' }); },
   login: () => authDrawer('login'), register: () => authDrawer('register'), acct: acctDrawer, branch: branchDrawer,
   dclose: () => $('#drawer').classList.remove('open'),
   eye: (el) => { const i = el.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; },
@@ -438,7 +402,7 @@ const ACT = {
   lang: () => { lang = lang === 'ar' ? 'en' : 'ar'; localStorage.setItem('hm_lang', lang); applyLang(); },
   soon: () => toast('التطبيق قريبًا'),
   usecode: (el) => { co.code = el.dataset.code; location.hash = '#/cart'; setTimeout(() => cart.length ? applyCode() : toast('ضيف منتجات للسلة الأول'), 300); },
-  dot: (el) => { const s = $('#slides'); if (!s) return; const i = slideI = +el.dataset.i; s.style.transform = `translateX(${(lang === 'ar' ? 1 : -1) * i * 100}%)`; document.querySelectorAll('#dots i').forEach((d, k) => d.classList.toggle('on', k === i)); fitSlider(); },
+  dot: (el) => { const s = $('#slides'); if (!s) return; const i = +el.dataset.i; s.style.transform = `translateX(${(lang === 'ar' ? 1 : -1) * i * 100}%)`; document.querySelectorAll('#dots i').forEach((d, k) => d.classList.toggle('on', k === i)); },
   filter: () => { L.f = [...document.querySelectorAll('.fl-f:checked')].map(x => x.value); L.av = [...document.querySelectorAll('.fl-a:checked')].map(x => x.value); L.page = 1; list(...LAST); },
   reset: () => { L = { key: L.key, f: [], min: null, max: null, av: [], sort: 'pop', page: 1 }; list(...LAST); },
   page: (el) => { L.page = +el.dataset.p; list(...LAST); window.scrollTo(0, 0); },
@@ -465,7 +429,7 @@ document.addEventListener('input', (e) => { if (e.target.id === 'q') qv = e.targ
 
 /* ======== 10) الترجمة عربي / English ======== */
 const D = {
-  'القائمة': 'Menu', 'اتصل بنا': 'Call us', 'مدة التوصيل من 45 إلى 60 دقيقة': 'Delivery time 45 - 60 minutes', 'طرق دفع سهلة': 'Easy payment methods', 'ابحث عن...': 'Search for...',
+  'اتصل بنا': 'Call us', 'مدة التوصيل من 45 إلى 60 دقيقة': 'Delivery time 45 - 60 minutes', 'طرق دفع سهلة': 'Easy payment methods', 'ابحث عن...': 'Search for...',
   'تسجيل الدخول': 'Login', 'إنشاء حساب': 'Sign up', 'تتبع الطلب': 'Track order', 'تغيير': 'Change', 'اختر الفرع': 'Choose branch', 'الرئيسية': 'Home', 'المنيو': 'Menu', 'العروض': 'Offers', 'فروعنا': 'Our branches',
   'روابط سريعة': 'Quick links', 'خدمة العملاء': 'Customer service', 'سياسة الاسترجاع': 'Return policy', 'الأسئلة الشائعة': 'FAQ', 'اتصل بنا': 'Contact us', 'حمّل التطبيق': 'Get the app',
   'أجود الحلويات الشرقية والغربية والمخبوزات، بمكونات طازة وتوصيل لحد باب بيتك.': 'The finest oriental and western sweets and bakery, fresh ingredients delivered to your door.',
@@ -501,10 +465,6 @@ function applyLang() {
   const en = lang === 'en', r = document.documentElement; r.lang = lang; r.dir = en ? 'ltr' : 'rtl'; document.title = en ? 'Helw El Malek' : 'حلو الملك';
   head(); foot(); route();
 }
-
-/* ======== منع الزوم بالصباع في الموبايل ======== */
-['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, (e) => e.preventDefault()));   // iOS
-document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });      // لمسة بإصبعين
 
 /* ======== 11) تشغيل ======== */
 if (!CATS.length && !PRODS.length && !window.REMOTE) toast('تعذّر تحميل البيانات');
