@@ -72,6 +72,21 @@ function resizeImage(file, max, q, mime = 'image/jpeg') {
   });
 }
 const uploadImage = (file, max = 800, q = 0.75, mime) => resizeImage(file, max, q, mime);
+// قص الصورة لمستطيل ثابت (من النص) بالمقاس المطلوب، فكل البانرات بنفس الشكل
+function cropImage(file, w, h, q = 0.75) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.max(w / img.width, h / img.height), sw = w / k, sh = h / k;
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+      g.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, 0, 0, w, h);
+      URL.revokeObjectURL(url); resolve(c.toDataURL('image/jpeg', q));
+    };
+    img.onerror = () => reject(new Error('الملف مش صورة صالحة'));
+    img.src = url;
+  });
+}
 function deleteImage() {}   // الصورة جوه المستند نفسه، فبتتمسح معاه
 
 
@@ -358,7 +373,7 @@ function bannersPage() {
   const slot = (k, n) => `<div class="slot">${pr[k] ? `<img src="${esc(imgSrc(pr[k]))}" alt="">` : '<span class="thumb ph" style="width:160px;height:70px;line-height:70px">فاضي</span>'}
     <div><b>البانر الإعلاني ${n}</b><br><label class="btn sm" style="display:inline-block;margin-top:8px">${pr[k] ? 'استبدال' : 'رفع صورة'}<input type="file" accept="image/*" hidden data-up="${k}"></label></div></div>`;
   return card('بانرات السلايدر', b.length, `<label class="btn sm">+ إضافة صور<input type="file" accept="image/*" multiple hidden data-up="banner"></label>`,
-    (gal ? `<div class="gal">${gal}</div>` : '<div class="empty">مفيش بانرات — الموقع بيعرض الصور الافتراضية.</div>')) +
+    (gal ? `<div class="gal">${gal}</div>` : '<div class="empty">مفيش بانرات — الموقع بيعرض الصور الافتراضية.</div>') + '<p class="note">المقاس ثابت (مستطيل 5:2). أي صورة ترفعها بتتقص من النص تلقائيًا؛ الأفضل ترفع صورة مقاسها 1200×480 وتخلّي الكتابة في النص.</p>') +
     card('البانرات الإعلانية', 2, '', slot('p1', 1) + slot('p2', 2));
 }
 
@@ -474,7 +489,7 @@ $('#view').addEventListener('change', guard(async (e) => {
     const ref = db.collection('settings').doc('home'), files = [...t.files];
     if (t.dataset.up === 'banner') {
       for (const f of files) {
-        const url = await uploadImage(f, 1400, 0.7);
+        const url = await cropImage(f, 1200, 480, 0.75);   // بانر ثابت 5:2
         // مستند Firestore أقصاه 1 ميجا، فبنتأكد إن مجموع البانرات مش كبير
         const used = (S.settings.banners || []).reduce((n, x) => n + x.length, 0);
         if (used + url.length > 900000) throw new Error('حجم البانرات كبير — احذف بانر قديم الأول');
@@ -576,11 +591,46 @@ const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'ماي�
 const field = (label, html) => `<label>${label}</label>${html}`;
 
 // تنبيه بطلب جديد: رسالة + صوت + إشعار المتصفح (لو اتفعّل). شغّال طول ما اللوحة مفتوحة
-function newOrderAlert(o) {
-  showToast('🔔 طلب جديد #' + o.orderNo + ' — ' + fmt(o.total) + ' ج.م');
-  try { const c = new (window.AudioContext || window.webkitAudioContext)(), s = c.createOscillator(); s.connect(c.destination); s.frequency.value = 880; s.start(); setTimeout(() => { s.stop(); c.close(); }, 400); } catch (e) {}
-  if (window.Notification && Notification.permission === 'granted') new Notification('طلب جديد #' + o.orderNo, { body: (o.branchName || '') + ' — ' + fmt(o.total) + ' ج.م' });
+let _ac = null, _flash = null;
+function audioCtx() { try { if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)(); if (_ac.state === 'suspended') _ac.resume(); } catch (e) {} return _ac; }
+['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, audioCtx, { passive: true }));   // المتصفح بيسمح بالصوت بعد أول ضغطة في الصفحة
+function chime(rep = 3) {                                 // نغمة من 3 نوتات بتتكرر
+  const c = audioCtx(); if (!c) return;
+  for (let r = 0; r < rep; r++) [880, 1109, 1319].forEach((f, i) => {
+    const t = c.currentTime + r * 1.2 + i * 0.2, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.value = f; o.connect(g); g.connect(c.destination);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+    o.start(t); o.stop(t + 0.4);
+  });
 }
+function flashTitle() {                                   // لو التاب مش قدامك: العنوان يومض
+  if (!document.hidden) return;
+  clearInterval(_flash); const base = 'حلو الملك | لوحة التحكم'; let on = false;
+  _flash = setInterval(() => { document.title = (on = !on) ? '🔔 طلب جديد!' : base; }, 900);
+  const stop = () => { clearInterval(_flash); document.title = base; window.removeEventListener('focus', stop); };
+  window.addEventListener('focus', stop);
+}
+// تنبيه بطلب جديد: رسالة + صوت + إشعار المتصفح + عنوان التاب. شغّال طول ما اللوحة مفتوحة
+function newOrderAlert(o) {
+  showToast('🔔 طلب جديد #' + o.orderNo + ' — ' + (o.name || '') + ' — ' + fmt(o.total) + ' ج.م');
+  chime(3); flashTitle();
+  if (window.Notification && Notification.permission === 'granted') new Notification('طلب جديد #' + o.orderNo, { body: (o.name || '') + ' — ' + (o.phone || '') + '\n' + (o.branchName || '') + ' — ' + fmt(o.total) + ' ج.م', requireInteraction: true });
+}
+
+/* ---------- رسائل واتساب للعميل (تأكيد الاستلام + تحديثات الحالة) ---------- */
+const waNum = (p) => { let n = String(p || '').replace(/\D/g, ''); if (n.startsWith('0')) n = '20' + n.slice(1); return n; };
+function orderMsg(o, k) {
+  const hi = `أهلًا ${o.name || ''} 👑\n`, no = `طلبك رقم #${o.orderNo}`, br = o.branchName ? ` (فرع ${o.branchName})` : '', pick = o.method === 'pickup';
+  const M = {
+    recv: `${hi}تم استلام ${no} من حلو الملك${br} ✅ وجاري مراجعته، هنبلغك أول ما يتحضّر.`,
+    'قيد التحضير': `${hi}تم تأكيد ${no}${br} ✅ وبنحضّره دلوقتي 🍰`,
+    'في الطريق': pick ? `${hi}${no}${br} جاهز للاستلام من الفرع 🎉` : `${hi}${no}${br} في الطريق إليك الآن 🚚 من فضلك جهّز الإجمالي كاش: ${fmt(o.total)} ج.م`,
+    'تم التسليم': `${hi}تم تسليم ${no} 🎁 بالهنا والشفا، ونتمنى نشوفك تاني في حلو الملك 👑`,
+    'ملغي': `${hi}نعتذر، تم إلغاء ${no}${br}. لأي استفسار كلمنا على نفس الرقم.`
+  };
+  return M[k] || '';
+}
+const custWaUrl = (o, text) => `https://wa.me/${waNum(o.phone)}?text=${encodeURIComponent(text)}`;
 
 /* ---------- الطلبات (مع الفرع + خصم المخزون عند تغيير الحالة) ---------- */
 function ordersPage(q, status) {
@@ -605,7 +655,9 @@ function orderModal(id) {
     ${(o.items || []).map(i => `<div class="li"><span>${esc(i.name)} × ${i.qty}</span><span>${fmt(i.price * i.qty)} ج.م</span></div>`).join('')}
     ${o.discount ? `<div class="li"><span>خصم ${esc(o.code)}</span><span>- ${fmt(o.discount)} ج.م</span></div>` : ''}
     ${o.fee ? `<div class="li"><span>رسوم التوصيل</span><span>${fmt(o.fee)} ج.م</span></div>` : ''}
-    <div class="li"><b>الإجمالي (كاش)</b><b>${fmt(o.total)} ج.م</b></div>`);
+    <div class="li"><b>الإجمالي (كاش)</b><b>${fmt(o.total)} ج.م</b></div>
+    <h3 style="margin:14px 0 6px">رسالة واتساب للعميل</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${[['تأكيد الاستلام', 'recv'], ['قيد التحضير', 'قيد التحضير'], [o.method === 'pickup' ? 'جاهز للاستلام' : 'في الطريق', 'في الطريق'], ['تم التسليم', 'تم التسليم']].map(([l, k]) => `<a class="btn ghost sm" target="_blank" rel="noopener" href="${custWaUrl(o, orderMsg(o, k))}">${l}</a>`).join('')}</div>`);
 }
 // تغيير حالة الطلب: أول ما يتقبل بيتخصم من المخزون، ولو اتلغى بيرجع
 async function moveStock(o, dir) {
@@ -681,7 +733,7 @@ function branchForm(id) {
   const b = S.branches.find(x => x.id === id) || {};
   openModal(`<h2>${id ? 'تعديل فرع' : 'إضافة فرع'}</h2><form data-form="branch" data-id="${esc(id || '')}">
     ${field('اسم الفرع', `<input name="name" value="${esc(b.name)}" required>`)}${field('المنطقة / العنوان', `<input name="area" value="${esc(b.area)}">`)}
-    ${field('رقم واتساب استلام الطلبات (01xxxxxxxxx)', `<input name="phone" inputmode="tel" value="${esc(b.phone)}">`)}
+    ${field('رقم واتساب الفرع — بيستقبل الطلبات والعميل بيتواصل معاه (01xxxxxxxxx)', `<input name="phone" inputmode="tel" value="${esc(b.phone)}" placeholder="01XXXXXXXXX" required pattern="01[0125][0-9]{8}">`)}
     <div class="two"><div>${field('رسوم التوصيل (ج.م)', `<input name="fee" type="number" min="0" value="${b.fee ?? 0}">`)}</div><div>${field('الترتيب', `<input name="order" type="number" value="${b.order ?? S.branches.length}">`)}</div></div>
     <label class="chk"><input type="checkbox" name="active" ${b.active === false ? '' : 'checked'}> الفرع شغال</label><div class="err" id="ferr"></div><button class="btn">حفظ</button></form>`);
 }
@@ -748,10 +800,11 @@ function setPage() {
     <div class="slot">${lg && lg !== 'none' ? `<img src="${esc(lg)}" alt="" style="width:80px;height:80px;object-fit:contain">` : `<span class="thumb ph" style="width:80px;height:80px;line-height:80px">${lg === 'none' ? 'بدون' : 'افتراضي'}</span>`}
       <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn sm">رفع لوجو جديد<input type="file" accept="image/*" hidden data-up="logo"></label><button class="btn ghost sm" data-act="logo-none">إزالة اللوجو</button><button class="btn ghost sm" data-act="logo-def">الافتراضي</button></div></div>
     <h3 style="margin:18px 0 6px">بيانات الموقع</h3>
-    <form data-form="brand" class="sf"><div class="two"><div>${field('الخط الساخن', `<input name="hotline" value="${esc(br.hotline)}" placeholder="16312">`)}</div><div>${field('واتساب (رقم)', `<input name="wa" value="${esc(so.wa)}">`)}</div>
+    <form data-form="brand" class="sf"><div class="two"><div>${field('الخط الساخن', `<input name="hotline" value="${esc(br.hotline)}" placeholder="16312">`)}</div><div class="fl" style="grid-column:1/-1"><label class="chk"><input type="checkbox" name="serverWa" ${br.serverWa ? 'checked' : ''}> الإرسال التلقائي من السيرفر شغّال (يوقف فتح واتساب اليدوي)</label></div><div>${field('رقم الأدمن لاستلام الطلبات (واتساب) — بيُستخدم لو الفرع ملوش رقم', `<input name="adminPhone" inputmode="tel" value="${esc(br.adminPhone)}" placeholder="01XXXXXXXXX">`)}</div><div>${field('واتساب (رقم)', `<input name="wa" value="${esc(so.wa)}">`)}</div>
       <div>${field('فيسبوك (لينك)', `<input name="fb" value="${esc(so.fb)}">`)}</div><div>${field('انستجرام (لينك)', `<input name="ig" value="${esc(so.ig)}">`)}</div><div>${field('تيك توك (لينك)', `<input name="tt" value="${esc(so.tt)}">`)}</div></div><div class="err"></div><button class="btn sm">حفظ</button></form>
     <h3 style="margin:18px 0 6px">أدوات</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" data-act="notif">تفعيل إشعارات المتصفح للطلبات</button><button class="btn" data-act="seed">نقل البيانات الأولية للقاعدة</button><button class="btn red" data-act="wipe-products">حذف كل المنتجات</button><button class="btn ghost" data-act="logout">تسجيل خروج</button></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" data-act="notif">تفعيل إشعارات المتصفح للطلبات</button><button class="btn ghost" data-act="testsound">اختبار صوت الطلبات</button><button class="btn" data-act="seed">نقل البيانات الأولية للقاعدة</button><button class="btn red" data-act="wipe-products">حذف كل المنتجات</button><button class="btn ghost" data-act="logout">تسجيل خروج</button></div>
+    <label class="chk"><input type="checkbox" data-autowa ${localStorage.getItem('hm_autowa') !== '0' ? 'checked' : ''}> فتح واتساب العميل برسالة جاهزة عند تغيير حالة الطلب</label>
     <p class="note">التنبيه بالطلبات الجديدة (صوت + رسالة) شغّال طول ما اللوحة مفتوحة. رقم واتساب كل فرع بتضيفه من صفحة الفروع.</p>`);
 }
 async function addAdmin(phone, pass, removeMe) {              // حساب جديد عن طريق نسخة تانية من Firebase عشان متخرجش من حسابك
@@ -786,6 +839,7 @@ Object.assign(ACT, {
   }),
   'logo-none': guard(async () => { await db.collection('settings').doc('brand').set({ logo: 'none' }, { merge: true }); touch(); showToast('تم إزالة اللوجو'); }),
   'logo-def': guard(async () => { await db.collection('settings').doc('brand').set({ logo: firebase.firestore.FieldValue.delete() }, { merge: true }); touch(); showToast('رجع اللوجو الافتراضي'); }),
+  testsound: () => { chime(2); showToast('🔔 ده صوت الطلبات الجديدة'); },
   notif: () => { if (!window.Notification) return showToast('المتصفح مش بيدعم الإشعارات'); Notification.requestPermission().then(p => showToast(p === 'granted' ? 'تم تفعيل الإشعارات ✓' : 'الإشعارات مرفوضة')); },
   seed: guard(async () => {
     if (S.products.length || S.cats.length) return showToast('القاعدة فيها بيانات بالفعل — مش هنكررها');
@@ -823,7 +877,15 @@ $('#modal').addEventListener('submit', async (e) => {                 // فور�
 }, true);
 $('#view').addEventListener('change', guard(async (e) => {            // حالة الطلب + فلتر الفرع + اللوجو
   const t = e.target;
-  if (t.dataset.oid) { e.stopImmediatePropagation(); await setStatus(S.orders.find(x => x.id === t.dataset.oid), t.value); showToast('تم تحديث الحالة ✓'); }
+  if (t.dataset.oid) {
+    e.stopImmediatePropagation(); const o = S.orders.find(x => x.id === t.dataset.oid);
+    const ask = localStorage.getItem('hm_autowa') !== '0' && o.phone && t.value !== 'جديدة' && t.value !== o.status && !(S.brand || {}).serverWa;
+    let w = null; if (ask) { try { w = window.open('', '_blank'); } catch (er) {} }       // التاب بيتفتح وإحنا في ضغطة الأدمن
+    try { await setStatus(o, t.value); } catch (er) { if (w) w.close(); throw er; }
+    if (w) w.location.href = custWaUrl(o, orderMsg(o, t.value));
+    showToast('تم تحديث الحالة ✓' + (w ? ' — اضغط إرسال في واتساب' : ''));
+  }
+  else if (t.dataset.autowa !== undefined) { e.stopImmediatePropagation(); localStorage.setItem('hm_autowa', t.checked ? '1' : '0'); showToast(t.checked ? 'هيتفتح واتساب العميل مع كل تغيير حالة' : 'تم إيقاف فتح واتساب التلقائي'); }
   else if (t.dataset.obr !== undefined) { e.stopImmediatePropagation(); orderBranch = t.value; renderPage(); }
   else if (t.dataset.repbr !== undefined) { e.stopImmediatePropagation(); repBranch = t.value; renderPage(); }
   else if (t.dataset.up === 'logo' && t.files.length) {
@@ -844,7 +906,7 @@ $('#view').addEventListener('submit', async (e) => {                  // فور�
       if (!/^01[0125]\d{8}$/.test(f.phone.trim())) return err('رقم الموبايل غير صحيح');
       await addAdmin(f.phone.trim(), f.pass, !!f.removeMe); e.target.reset(); showToast('تمت إضافة الأدمن ✓');
     } else {
-      await db.collection('settings').doc('brand').set({ hotline: f.hotline.trim(), social: { wa: f.wa.trim(), fb: f.fb.trim(), ig: f.ig.trim(), tt: f.tt.trim() } }, { merge: true }); touch(); showToast('تم الحفظ ✓');
+      await db.collection('settings').doc('brand').set({ hotline: f.hotline.trim(), adminPhone: (f.adminPhone || '').trim(), serverWa: !!f.serverWa, social: { wa: f.wa.trim(), fb: f.fb.trim(), ig: f.ig.trim(), tt: f.tt.trim() } }, { merge: true }); touch(); showToast('تم الحفظ ✓');
     }
   } catch (ex) {
     const c = ex.code || '';
