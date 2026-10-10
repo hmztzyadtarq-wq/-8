@@ -15,6 +15,8 @@ function toast(m) {                                   // رسالة صغيرة �
 /* ======== 2) الأيقونات (SVG) ======== */
 const ic = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const I = {
+  menu: ic('<path d="M4 6h16M4 12h16M4 18h16"/>'),
+  chev: ic('<path d="m15 6-6 6 6 6"/>'),
   cookie: ic('<path d="M12 3a9 9 0 1 0 9 9 4 4 0 0 1-4.5-4.5A4 4 0 0 1 12 3z"/><circle cx="9" cy="10" r=".9"/><circle cx="14" cy="14.5" r=".9"/><circle cx="8.5" cy="15" r=".9"/><circle cx="14.5" cy="9.5" r=".9"/>'),
   cake: ic('<path d="M3 20h18v-7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2zM3 15.5c3 2 6-2 9 0s6-2 9 0M12 11V7.5M12 3c1.2 1.2 1.2 2.4 0 3.2-1.2-.8-1.2-2 0-3.2z"/>'),
   gift: ic('<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12M12 8C10 4 6 5 7 8c.6 1.5 3 1 5 0zM12 8c2-4 6-3 5 0-.6 1.5-3 1-5 0z"/>'),
@@ -44,6 +46,16 @@ const I = {
   tt: ic('<path d="M14 3v11a4 4 0 1 1-4-4M14 3c0 3 2 5 5 5"/>'),
   wa: ic('<path d="M3 21l1.5-5A9 9 0 1 1 8 19.5z"/><path d="M9 9c0 3 3 6 6 6l1-2-2-1-1 .8c-1-.5-2-1.5-2.5-2.5l.8-1-1-2z"/>')
 };
+// أيقونات ملونة ومليانة للهيدر (ذهبي / أخضر / أعلام) — واضحة على الموبايل
+const fi = (p, c = '') => `<svg viewBox="0 0 24 24" class="${c}" aria-hidden="true">${p}</svg>`;
+Object.assign(I, {
+  userC: fi('<circle cx="12" cy="7.5" r="4.6" fill="#E0A82E"/><path d="M3 21.5c0-5 4-8.2 9-8.2s9 3.2 9 8.2z" fill="#E0A82E"/>'),
+  basketC: fi('<path d="M8.5 9.5l3-6M15.5 9.5l-3-6" stroke="#E0A82E" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M2.5 9.5h19l-2.2 10.6a1.5 1.5 0 0 1-1.5 1.2H6.2a1.5 1.5 0 0 1-1.5-1.2z" fill="#E0A82E"/><path d="M8.5 13v5M12 13v5M15.5 13v5" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>'),
+  pinC: fi('<path d="M12 22s7.5-6.6 7.5-12.2A7.5 7.5 0 0 0 4.5 9.8C4.5 15.4 12 22 12 22z" fill="#7FA52A"/><circle cx="12" cy="9.8" r="3" fill="#fff"/>'),
+  flagUS: `<svg viewBox="0 0 30 20" class="flag" aria-hidden="true"><rect width="30" height="20" fill="#fff"/><g fill="#C8283C"><rect width="30" height="2"/><rect y="4" width="30" height="2"/><rect y="8" width="30" height="2"/><rect y="12" width="30" height="2"/><rect y="16" width="30" height="2"/><rect y="18" width="30" height="2"/></g><rect width="13" height="11" fill="#2B3C85"/><g fill="#fff"><circle cx="3" cy="3" r=".9"/><circle cx="6.5" cy="3" r=".9"/><circle cx="10" cy="3" r=".9"/><circle cx="4.7" cy="6" r=".9"/><circle cx="8.2" cy="6" r=".9"/><circle cx="3" cy="9" r=".9"/><circle cx="6.5" cy="9" r=".9"/><circle cx="10" cy="9" r=".9"/></g></svg>`,
+  flagEG: `<svg viewBox="0 0 30 20" class="flag" aria-hidden="true"><rect width="30" height="6.7" fill="#CE1126"/><rect y="6.7" width="30" height="6.6" fill="#fff"/><rect y="13.3" width="30" height="6.7" fill="#111"/><circle cx="15" cy="10" r="2.2" fill="#C09300"/></svg>`,
+  google: `<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`
+});
 // أيقونة بديلة للمنتج/القسم لو مفيش صورة (بتتحدد من اسم القسم)
 const catIco = (n = '') => /شرق|مصر/.test(n) ? 'cookie' : /غرب/.test(n) ? 'cake' : /ميكس|هدايا/.test(n) ? 'gift' : /مخبوز/.test(n) ? 'bread' : /شيكولات|شوكولات/.test(n) ? 'candy' : /كحك|مولد|عيد/.test(n) ? 'moon' : /ايس|آيس/.test(n) ? 'ice' : /عروض|خصوم/.test(n) ? 'pct' : 'cookie';
 
@@ -102,15 +114,16 @@ function head() {
   $('#top').innerHTML = `
   <div class="topbar"><span>${I.phone} اتصل بنا: ${esc(HOT)}</span><span>${I.truck} مدة التوصيل من 45 إلى 60 دقيقة</span><span>${I.card} طرق دفع سهلة</span></div>
   <header class="header"><div class="wrap hrow">
+    <button class="burger" data-act="menu" aria-label="menu">${I.menu}</button>
     <a class="logo" href="#/">${logoHtml()}</a>
     <form class="search" id="sf"><input id="q" placeholder="ابحث عن..." value="${esc(qv)}"><button aria-label="search">${I.search}</button></form>
     <div class="acts">
-      ${user ? `<a class="act" href="#" data-act="acct">${I.user}<span>${esc(user.phone)}</span></a>`
-             : `<a class="act" href="#" data-act="login">${I.user}<span>تسجيل الدخول</span></a><a class="act" href="#" data-act="register"><span>إنشاء حساب</span></a>`}
+      ${user ? `<a class="act" href="#" data-act="acct">${I.userC}<span class="nm">${esc(user.name || user.phone || user.email)}</span></a>`
+             : `<a class="act" href="#" data-act="login">${I.userC}<span>تسجيل الدخول</span></a><a class="act" href="#" data-act="register"><span>إنشاء حساب</span></a>`}
       ${hasOrders ? `<a class="act" href="#/track"><span>تتبع الطلب</span></a>` : ''}
-      <a class="act" href="#/cart">${I.basket}<span>${cartCount()} منتج</span></a>
-      <a class="act" href="#" data-act="branch">${I.pin}<span>${esc(branchName() || 'اختر الفرع')}</span><em>تغيير</em></a>
-      <a class="act" href="#" data-act="lang">${I.globe}<span>${lang === 'ar' ? 'English' : 'العربية'}</span></a>
+      <a class="act" href="#/cart">${I.basketC}<span>${cartCount()} منتج</span></a>
+      <a class="act" href="#" data-act="branch">${I.pinC}<span>${esc(branchName() || 'اختر الفرع')}</span><em>تغيير</em></a>
+      <a class="act" href="#" data-act="lang">${lang === 'ar' ? I.flagUS : I.flagEG}<span>${lang === 'ar' ? 'English' : 'العربية'}</span></a>
     </div></div>
     <nav class="nav"><ul class="wrap">${CATS.map(c => `<li><a href="${navHref(c)}" class="${(isOffersCat(c.name) ? curCat === '__offers' : curCat === c.name) ? 'on' : ''}">${esc(c.name)}</a></li>`).join('')}</ul></nav>
   </header>`;
@@ -139,6 +152,9 @@ function card(p) {
     <button class="cb" data-add="${p.id}" ${out(p) ? 'disabled' : ''} aria-label="add">${I.cartp}</button></div></div></article>`;
 }
 
+/* كاروسيل أفقي: صف منتجات بيتحرك بالجنب (سحب بالصباع أو الأسهم) */
+const carousel = (a) => `<div class="car"><button class="cn p" data-act="cnav" data-d="-1" aria-label="prev">${I.chev}</button><div class="cs">${a.map(card).join('')}</div><button class="cn n" data-act="cnav" data-d="1" aria-label="next">${I.chev}</button></div>`;
+
 /* ======== 7) الراوتر والعرض ======== */
 function render(html, keep) {
   clearInterval(slideT); $('#view').innerHTML = html; tr($('#view'));
@@ -156,6 +172,20 @@ function route() {
 window.addEventListener('hashchange', route);
 
 /* ---------- الرئيسية ---------- */
+const FLAT_ROWS = 4;                                   // أقصى عدد صفوف للمنتجات اللي من غير عنوان (3 أو 4)
+function flatRows() {                                  // كل المنتجات مقسّمة على صفوف من غير عنوان
+  const n = PRODS.length; if (!n) return '';
+  const k = Math.min(FLAT_ROWS, Math.max(1, Math.floor(n / 3))), sz = Math.ceil(n / k);
+  return Array.from({ length: k }, (_, i) => PRODS.slice(i * sz, (i + 1) * sz)).filter(r => r.length).map(r => `<section class="wrap rowsec nt">${carousel(r)}</section>`).join('');
+}
+let slideI = 0;                                        // رقم البانر الظاهر دلوقتي
+function fitSlider() {                                 // طول البانر = طول الصورة الظاهرة بالظبط (من غير قص)
+  const s = $('#slides'); if (!s) return;
+  const im = s.children[slideI] && s.children[slideI].querySelector('img');
+  if (im && im.clientHeight) s.parentElement.style.height = im.clientHeight + 'px';
+}
+window.addEventListener('resize', fitSlider);
+document.addEventListener('load', (e) => { if (e.target.tagName === 'IMG' && e.target.closest('#slides')) fitSlider(); }, true);
 function home() {
   const bn = CFG.banners || [];
   const hero = bn.length ? `<div class="wrap"><div class="slider"><div class="slides" id="slides" style="transform:translateX(0)">${bn.map(u => `<div><img src="${esc(u)}" alt=""></div>`).join('')}</div></div>
@@ -166,17 +196,12 @@ function home() {
   const circ = [...CATS.filter(c => c.circle && !isOffersCat(c.name)), ...CATS.filter(c => c.circle && isOffersCat(c.name))];
   const cats = circ.length ? `<section class="wrap rowsec"><div class="rh"><h2>تسوق حسب القسم</h2></div><div class="cats">${circ.map(c =>
     `<a class="cc" href="${navHref(c)}"><span class="ci">${c.img ? `<img src="${esc(c.img)}" alt="">` : I[catIco(c.name)]}</span>${esc(c.name)}</a>`).join('')}</div></section>` : '';
-  const rows = SEC.map(([k, t]) => { const it = PRODS.filter(p => p.section === k); return it.length ? `<section class="wrap rowsec"><div class="rh"><h2>${t}</h2><a href="#/sec/${enc(k)}">عرض الكل</a></div><div class="g5">${it.slice(0, 5).map(card).join('')}</div></section>` : ''; });
-  const pr = CFG.promos || {}, off = window.OFFER1;
-  const kahk = CATS.find(c => /كحك/.test(c.name));
-  const promos = (pr.p1 || pr.p2 || kahk) ? `<section class="wrap promos">
-    ${pr.p1 ? `<div class="pm im"><img src="${esc(pr.p1)}" alt=""></div>` : (off ? `<div class="pm"><div><h3>${esc(off.title)}</h3><p>كود: <b style="color:var(--maroon)">${esc(off.code)}</b></p><a href="#" class="gbtn" data-act="usecode" data-code="${esc(off.code)}">استخدم الكود</a></div>${I.pct}</div>` : '<div></div>')}
-    ${pr.p2 ? `<div class="pm im"><img src="${esc(pr.p2)}" alt=""></div>` : (kahk ? `<div class="pm k"><div><h3>${esc(kahk.name)} 2026</h3><p>اطلب بدري واستلم في معادك</p><a class="gbtn" href="${navHref(kahk)}">اطلب الآن</a></div>${I.moon}</div>` : '')}</section>` : '';
+  const rows = SEC.map(([k, t]) => { const it = PRODS.filter(p => p.section === k); return it.length ? `<section class="wrap rowsec"><div class="rh"><h2>${t}</h2><a href="#/sec/${enc(k)}">عرض الكل</a></div>${carousel(it.slice(0, 12))}</section>` : ''; });
   const feat = `<section class="wrap feat">${[['truck', 'توصيل سريع', 'من 45 إلى 60 دقيقة'], ['shield', 'مكونات أصلية', 'زبدة وفواكه طازة'], ['card', 'دفع سهل', 'كاش عند الاستلام'], ['store', 'فروع كثير', 'اطلب من أقرب فرع ليك']].map(([i, t, s]) => `<div class="ft"><div><b>${t}</b><small>${s}</small></div>${I[i]}</div>`).join('')}</section>`;
   if (!PRODS.length && !CATS.length) return render(`<div class="wrap empty"><h2>المتجر قيد التجهيز</h2><p>هنكون معاكم قريبًا.</p></div>`);
-  render(hero + cats + (rows[0] || '') + promos + feat + (rows[1] || '') + (rows[2] || ''));
+  render(hero + flatRows() + (rows[0] || '') + (rows[1] || '') + (rows[2] || '') + cats + feat);
+  slideI = 0; setTimeout(fitSlider, 60);
   if (bn.length > 1) { let i = 0; slideT = setInterval(() => ACT.dot({ dataset: { i: i = (i + 1) % bn.length } }), 5000); }
-  if (!window.OFFER1 && !window.OFFER_TRIED) { window.OFFER_TRIED = 1; db.collection('offers').where('active', '==', true).limit(1).get().then(s => { if (s.docs[0]) { window.OFFER1 = s.docs[0].data(); if (location.hash.replace('#', '') === '' || location.hash === '#/') home(); } }).catch(() => {}); }
 }
 
 /* ---------- صفحات القوائم (قسم / بحث / عروض / الكل) ---------- */
@@ -239,7 +264,7 @@ function product(id) {
     <div class="inf"><span>${I.truck} توصيل من 45 لـ 60 دقيقة</span><span>${I.shield} مكونات طازة</span></div></div></div>
    <div class="tabs"><nav>${[['d', 'الوصف'], ['i', 'المكونات'], ['r', 'التقييمات']].map(([k, t]) => `<button class="${PD.tab === k ? 'on' : ''}" data-act="tab" data-v="${k}">${t}</button>`).join('')}</nav>
     <p>${esc(PD.tab === 'd' ? (p.desc || 'لا يوجد وصف.') : PD.tab === 'i' ? (p.ingredients || 'لا توجد مكونات مسجّلة.') : (p.reviews > 0 ? p.reviews + ' تقييم' : 'لا توجد تقييمات حتى الآن.'))}</p></div>
-   ${sim.length ? `<section class="rowsec"><div class="rh"><h2>منتجات مشابهة</h2></div><div class="g5">${sim.map(card).join('')}</div></section>` : ''}</div>`, PD.keep);
+   ${sim.length ? `<section class="rowsec"><div class="rh"><h2>منتجات مشابهة</h2></div>${carousel(sim)}</section>` : ''}</div>`, PD.keep);
   PD.keep = false;
 }
 
@@ -252,7 +277,8 @@ function discountAmt() { if (!co.offer) return 0; const s = subtotal(); return M
 function cartView() {
   const ls = lines();
   if (!ls.length) return render(`<div class="wrap empty"><h2>السلة فاضية</h2><p>ضيف منتجات وارجع هنا.</p><a class="gbtn" style="display:inline-block" href="#/all">تصفح المنيو</a></div>`);
-  if (user && !co.phone) co.phone = user.phone;
+  if (user && !co.phone) co.phone = user.phone || '';
+  if (user && !co.name) co.name = user.name || '';
   const br = branchOf(co.branch), pick = co.method === 'pickup';
   const sub = subtotal(), d = discountAmt(), fee = pick ? 0 : (br ? +br.fee || 0 : 0), total = Math.max(0, sub - d + fee);
   render(`<div class="wrap"><div class="steps"><span class="dn"><b>1</b>السلة</span><hr><span class="on"><b>2</b>بيانات التوصيل</span><hr><span><b>3</b>الدفع</span></div>
@@ -343,8 +369,10 @@ function pgView(k) {
 function authDrawer(tab = 'login', cb) {
   if (cb) afterAuth = cb; const reg = tab === 'register';
   $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn"><button class="dx" data-act="dclose">×</button>
-   <h2>${reg ? 'أهلاً بك' : 'مرحبا بعودتك'}</h2><p class="dsub">${reg ? 'أنشئ حسابك برقم الموبايل وكلمة المرور' : 'سجّل دخولك برقم الموبايل وكلمة المرور'}</p>
-   <form id="af" data-tab="${tab}"><label>رقم الموبايل</label><input name="phone" inputmode="tel" placeholder="01XXXXXXXXX" autocomplete="username" required>
+   <h2>${reg ? 'أهلاً بك' : 'مرحبا بعودتك'}</h2><p class="dsub">${reg ? 'أنشئ حسابك برقم الموبايل أو بحساب جوجل' : 'سجّل دخولك برقم الموبايل أو بحساب جوجل'}</p>
+   <button type="button" class="gg" id="ggbtn" data-act="google">${I.google}<span>${reg ? 'التسجيل بحساب جوجل' : 'الدخول بحساب جوجل'}</span></button>
+   <div class="or"><span>أو</span></div>
+   <form id="af" data-tab="${tab}">${reg ? '<label>الاسم</label><input name="name" autocomplete="name" placeholder="اكتب اسمك" required>' : ''}<label>رقم الموبايل</label><input name="phone" inputmode="tel" placeholder="01XXXXXXXXX" autocomplete="username" required>
    <label>كلمة المرور</label><div class="pw"><input name="pass" type="password" autocomplete="${reg ? 'new-password' : 'current-password'}" required><button type="button" class="eye" data-act="eye">${I.eye}</button></div>
    ${reg ? '' : '<a href="#" class="dl" data-act="forgot">نسيت كلمة المرور ؟</a>'}<div class="err" id="aerr"></div>
    <button class="gbtn" id="abtn">${reg ? 'إنشاء الحساب' : 'تسجيل الدخول'}</button></form>
@@ -352,13 +380,20 @@ function authDrawer(tab = 'login', cb) {
   $('#drawer').classList.add('open'); tr($('#drawer'));
 }
 function acctDrawer() {
-  $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn"><button class="dx" data-act="dclose">×</button><h2>حسابي</h2><p class="dsub" dir="ltr">${esc(user.phone)}</p>
+  $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn"><button class="dx" data-act="dclose">×</button><h2>حسابي</h2><p class="dsub"><b>${esc(user.name || '')}</b><br><span dir="ltr">${esc(user.phone || user.email || '')}</span></p>
    <a class="gbtn" href="#/track" data-act="dclose">تتبع طلباتي</a><button class="gbtn w" style="width:100%;margin-top:12px;border:1px solid var(--navy)" data-act="logout">تسجيل خروج</button></div>`;
   $('#drawer').classList.add('open'); tr($('#drawer'));
 }
 function branchDrawer() {
   $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn"><button class="dx" data-act="dclose">×</button><h2>اختر الفرع</h2><p class="dsub">اطلب من أقرب فرع ليك</p>
    ${BR.map(b => `<button class="bo ${b.id === myBranch ? 'on' : ''}" data-act="pick" data-id="${b.id}"><b>${esc(b.name)}</b><small>${esc(b.area || '')}</small></button>`).join('') || '<div class="empty">لا توجد فروع متاحة حاليًا</div>'}</div>`;
+  $('#drawer').classList.add('open'); tr($('#drawer'));
+}
+function menuDrawer() {                               // قائمة الهمبورجر (الأقسام) في الموبايل
+  $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn mn"><button class="dx" data-act="dclose">×</button><h2>القائمة</h2>
+   <a class="mi" href="#/" data-act="dclose">الرئيسية</a><a class="mi" href="#/all" data-act="dclose">المنيو</a>
+   ${CATS.map(c => `<a class="mi" href="${navHref(c)}" data-act="dclose">${esc(c.name)}</a>`).join('')}
+   <a class="mi" href="#/branches" data-act="dclose">فروعنا</a></div>`;
   $('#drawer').classList.add('open'); tr($('#drawer'));
 }
 document.addEventListener('submit', async (e) => {
@@ -369,9 +404,13 @@ document.addEventListener('submit', async (e) => {
   try {
     if (!/^01[0125]\d{8}$/.test(phone)) return err('رقم الموبايل غير صحيح');
     if (reg) {
+      const nm = (f.name || '').trim();
+      if (nm.length < 2) return err('اكتب اسمك (حرفين على الأقل)');
       if (f.pass.length < 6) return err('كلمة المرور لازم 6 حروف على الأقل');
       const c = await auth.createUserWithEmailAndPassword(phoneEmail(phone), f.pass);
-      await db.collection('users').doc(c.user.uid).set({ phone, createdAt: TS() });   // رقم الموبايل بس (توفير في المساحة)
+      try { await c.user.updateProfile({ displayName: nm }); } catch {}                   // الاسم بيتخزن في حساب Firebase نفسه
+      user = { ...(user || { uid: c.user.uid, phone }), name: nm }; head();                // يظهر الاسم في الهيدر فورًا
+      await db.collection('users').doc(c.user.uid).set({ name: nm, phone, createdAt: TS() });
     } else {
       const c = await auth.signInWithEmailAndPassword(phoneEmail(phone), f.pass);
       const a = await db.collection('admins').doc(c.user.uid).get();
@@ -384,16 +423,42 @@ document.addEventListener('submit', async (e) => {
     err(c === 'auth/email-already-in-use' ? 'الرقم ده مسجّل قبل كده' : /invalid|wrong|user-not-found/.test(c) ? 'الرقم أو كلمة المرور غلط' : c === 'auth/network-request-failed' ? 'مشكلة في الاتصال بالإنترنت' : 'حصلت مشكلة، حاول تاني');
   } finally { const b = $('#abtn'); if (b) b.disabled = false; }
 });
+const PH_DOMAIN = 'helwelmalek.app';
+async function googleLogin() {                         // تسجيل / دخول بحساب جوجل
+  const err = (m) => { const e = $('#aerr'); if (e) e.textContent = lang === 'en' ? T(m) : m; };
+  const b = $('#ggbtn'); if (b) b.disabled = true;
+  try {
+    const prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
+    let c;
+    try { c = await auth.signInWithPopup(prov); }
+    catch (ex) {
+      if (ex.code === 'auth/popup-blocked' || ex.code === 'auth/operation-not-supported-in-this-environment') { await auth.signInWithRedirect(prov); return; }
+      throw ex;
+    }
+    const a = await db.collection('admins').doc(c.user.uid).get();
+    if (a.exists) { location.href = 'admin.html'; return; }
+    ACT.dclose(); toast('أهلاً بك ✓');
+    if (afterAuth) { const fn = afterAuth; afterAuth = null; setTimeout(fn, 600); }
+  } catch (ex) {
+    const c = ex.code || '';
+    if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return;
+    err(c === 'auth/network-request-failed' ? 'مشكلة في الاتصال بالإنترنت' : /unauthorized-domain|operation-not-allowed/.test(c) ? 'تسجيل جوجل غير مفعّل حاليًا' : 'حصلت مشكلة، حاول تاني');
+  } finally { const b2 = $('#ggbtn'); if (b2) b2.disabled = false; }
+}
 auth.onAuthStateChanged(async (u) => {
   if (!u) { user = null; hasOrders = false; head(); return; }
-  user = { uid: u.uid, phone: (u.email || '').split('@')[0] };
+  const em = u.email || '', isPh = em.endsWith('@' + PH_DOMAIN);      // حساب رقم موبايل ولا حساب جوجل
+  user = { uid: u.uid, phone: isPh ? em.split('@')[0] : '', email: isPh ? '' : em, name: u.displayName || (user && user.uid === u.uid ? user.name : '') || '' };
+  if (!isPh) { try { const r = db.collection('users').doc(u.uid); if (!(await r.get()).exists) await r.set({ name: u.displayName || '', email: em, phone: '', createdAt: TS() }); } catch {} }
   try { hasOrders = !(await db.collection('orders').where('uid', '==', u.uid).limit(1).get()).empty; } catch {}
-  head(); if (location.hash.startsWith('#/cart')) cartView();
+  user.name = u.displayName || user.name; head(); if (location.hash.startsWith('#/cart')) cartView();
 });
 
 /* ======== 9) الأوامر (كل الأزرار) ======== */
 const ACT = {
-  login: () => authDrawer('login'), register: () => authDrawer('register'), acct: acctDrawer, branch: branchDrawer,
+  menu: menuDrawer,
+  cnav: (el) => { const c = el.parentElement.querySelector('.cs'); c.scrollBy({ left: +el.dataset.d * c.clientWidth * .8 * (lang === 'ar' ? -1 : 1), behavior: 'smooth' }); },
+  google: googleLogin, login: () => authDrawer('login'), register: () => authDrawer('register'), acct: acctDrawer, branch: branchDrawer,
   dclose: () => $('#drawer').classList.remove('open'),
   eye: (el) => { const i = el.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; },
   forgot: () => toast('لاستعادة كلمة المرور اتصل بنا على ' + HOT),
@@ -402,7 +467,7 @@ const ACT = {
   lang: () => { lang = lang === 'ar' ? 'en' : 'ar'; localStorage.setItem('hm_lang', lang); applyLang(); },
   soon: () => toast('التطبيق قريبًا'),
   usecode: (el) => { co.code = el.dataset.code; location.hash = '#/cart'; setTimeout(() => cart.length ? applyCode() : toast('ضيف منتجات للسلة الأول'), 300); },
-  dot: (el) => { const s = $('#slides'); if (!s) return; const i = +el.dataset.i; s.style.transform = `translateX(${(lang === 'ar' ? 1 : -1) * i * 100}%)`; document.querySelectorAll('#dots i').forEach((d, k) => d.classList.toggle('on', k === i)); },
+  dot: (el) => { const s = $('#slides'); if (!s) return; const i = slideI = +el.dataset.i; s.style.transform = `translateX(${(lang === 'ar' ? 1 : -1) * i * 100}%)`; document.querySelectorAll('#dots i').forEach((d, k) => d.classList.toggle('on', k === i)); fitSlider(); },
   filter: () => { L.f = [...document.querySelectorAll('.fl-f:checked')].map(x => x.value); L.av = [...document.querySelectorAll('.fl-a:checked')].map(x => x.value); L.page = 1; list(...LAST); },
   reset: () => { L = { key: L.key, f: [], min: null, max: null, av: [], sort: 'pop', page: 1 }; list(...LAST); },
   page: (el) => { L.page = +el.dataset.p; list(...LAST); window.scrollTo(0, 0); },
@@ -429,7 +494,7 @@ document.addEventListener('input', (e) => { if (e.target.id === 'q') qv = e.targ
 
 /* ======== 10) الترجمة عربي / English ======== */
 const D = {
-  'اتصل بنا': 'Call us', 'مدة التوصيل من 45 إلى 60 دقيقة': 'Delivery time 45 - 60 minutes', 'طرق دفع سهلة': 'Easy payment methods', 'ابحث عن...': 'Search for...',
+  'القائمة': 'Menu', 'اتصل بنا': 'Call us', 'مدة التوصيل من 45 إلى 60 دقيقة': 'Delivery time 45 - 60 minutes', 'طرق دفع سهلة': 'Easy payment methods', 'ابحث عن...': 'Search for...',
   'تسجيل الدخول': 'Login', 'إنشاء حساب': 'Sign up', 'تتبع الطلب': 'Track order', 'تغيير': 'Change', 'اختر الفرع': 'Choose branch', 'الرئيسية': 'Home', 'المنيو': 'Menu', 'العروض': 'Offers', 'فروعنا': 'Our branches',
   'روابط سريعة': 'Quick links', 'خدمة العملاء': 'Customer service', 'سياسة الاسترجاع': 'Return policy', 'الأسئلة الشائعة': 'FAQ', 'اتصل بنا': 'Contact us', 'حمّل التطبيق': 'Get the app',
   'أجود الحلويات الشرقية والغربية والمخبوزات، بمكونات طازة وتوصيل لحد باب بيتك.': 'The finest oriental and western sweets and bakery, fresh ingredients delivered to your door.',
@@ -449,6 +514,7 @@ const D = {
   'المتجر قيد التجهيز': 'Store coming soon', 'الصفحة غير موجودة': 'Page not found', 'الرجوع للرئيسية': 'Back to home', 'عروض وخصومات': 'Offers & discounts', 'البحث': 'Search', 'قريبًا': 'Soon',
   'تمت الإضافة للسلة ✓': 'Added to cart ✓', 'التطبيق قريبًا': 'App coming soon', 'تم تسجيل الخروج': 'Logged out', 'أهلاً بك ✓': 'Welcome ✓', 'رقم الموبايل غير صحيح': 'Invalid mobile number', 'كلمة المرور لازم 6 حروف على الأقل': 'Password must be at least 6 characters',
   'الرقم ده مسجّل قبل كده': 'This number is already registered', 'الرقم أو كلمة المرور غلط': 'Wrong number or password', 'اختر الفرع الأقرب لك': 'Choose your nearest branch', 'اكتب الاسم بالكامل': 'Enter your full name', 'اكتب المنطقة والعنوان بالتفصيل': 'Enter the area and detailed address',
+  'الاسم': 'Name', 'اكتب اسمك': 'Enter your name', 'أو': 'or', 'التسجيل بحساب جوجل': 'Sign up with Google', 'الدخول بحساب جوجل': 'Continue with Google', 'أنشئ حسابك برقم الموبايل أو بحساب جوجل': 'Create your account with mobile number or Google', 'سجّل دخولك برقم الموبايل أو بحساب جوجل': 'Log in with mobile number or Google', 'اكتب اسمك (حرفين على الأقل)': 'Enter your name (at least 2 characters)', 'تسجيل جوجل غير مفعّل حاليًا': 'Google sign-in is not available right now',
   'الكود غير صحيح': 'Invalid code', 'الكود منتهي': 'Code expired', 'تم تطبيق الكود ✓': 'Code applied ✓', 'اكتب كود الخصم': 'Enter a discount code', 'سياسة الاسترجاع': 'Return policy'
 };
 const RULES = [[/^(\d+) منتج$/, '$1 items'], [/^(.+) ج\.م$/, '$1 EGP'], [/^خصم (\d+)%$/, '$1% off'], [/^طلب #(\d+)$/, 'Order #$1'], [/^الكمية المتاحة (\d+) فقط$/, 'Only $1 available'], [/^اتصل بنا: (.+)$/, 'Call us: $1'], [/^(\d+) تقييم$/, '$1 reviews'], [/^خصم (.+)$/, 'Discount $1'], [/^الخط الساخن: (.+)$/, 'Hotline: $1'], [/^نتائج البحث عن "(.*)"$/, 'Search results for "$1"']];
@@ -465,6 +531,10 @@ function applyLang() {
   const en = lang === 'en', r = document.documentElement; r.lang = lang; r.dir = en ? 'ltr' : 'rtl'; document.title = en ? 'Helw El Malek' : 'حلو الملك';
   head(); foot(); route();
 }
+
+/* ======== منع الزوم بالصباع في الموبايل ======== */
+['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, (e) => e.preventDefault()));   // iOS
+document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });      // لمسة بإصبعين
 
 /* ======== 11) تشغيل ======== */
 if (!CATS.length && !PRODS.length && !window.REMOTE) toast('تعذّر تحميل البيانات');
