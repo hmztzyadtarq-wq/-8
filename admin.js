@@ -73,7 +73,18 @@ function resizeImage(file, max, q, mime = 'image/jpeg') {
     img.src = url;
   });
 }
-const uploadImage = (file, max = 800, q = 0.75, mime) => resizeImage(file, max, q, mime);
+/* ---- رفع الصور على Cloudinary (مجاني) بدل ما تتخزن جوه قاعدة البيانات ----
+   املا الخانتين دول مرة واحدة. لو سبتهم فاضيين، الصور بتتخزن جوه Firestore زي الأول (وده اللي بيبطّئ الموقع). */
+const CLOUD = { name: 'xrtioso9', preset: 'helwelmalek' };      // name = Cloud name ، preset = اسم الـ Unsigned upload preset
+async function cloudUpload(file, max, q) {
+  const dataUrl = await resizeImage(file, max, q), blob = await (await fetch(dataUrl)).blob();   // بنصغّر الصورة الأول عشان الرفع يبقى سريع
+  const fd = new FormData(); fd.append('file', blob, 'img.' + (blob.type.includes('webp') ? 'webp' : 'jpg')); fd.append('upload_preset', CLOUD.preset);
+  const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`, { method: 'POST', body: fd });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.secure_url) throw new Error((j.error && j.error.message) || 'فشل رفع الصورة');
+  return j.secure_url;                          // اللي بيتخزن في المنتج لينك صغير بس
+}
+const uploadImage = (file, max = 800, q = 0.75, mime) => (CLOUD.name && CLOUD.preset && mime !== 'image/png') ? cloudUpload(file, max, q) : resizeImage(file, max, q, mime);
 function deleteImage() {}   // الصورة جوه المستند نفسه، فبتتمسح معاه
 
 
@@ -230,7 +241,8 @@ const card = (title, count, tools, body) =>
 const table = (heads, rows) => `<div class="tw"><table><tr>${heads.map(h => `<th>${h}</th>`).join('')}</tr>${rows.join('')}</table></div>`;
 const none = '<div class="empty">لا توجد نتائج</div>';
 const hit = (arr, q) => !q || arr.join(' ').toLowerCase().includes(q.toLowerCase());
-const thumb = (u) => u ? `<img class="thumb" src="${esc(imgSrc(u))}" alt="" onerror="this.style.visibility='hidden'">` : '<span class="thumb ph">—</span>';
+const small = (u) => /res\.cloudinary\.com\/[^/]+\/image\/upload\/v?\d/.test(u || '') ? u.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_120/') : u;   // صورة صغيرة للجداول
+const thumb = (u) => u ? `<img class="thumb" loading="lazy" src="${esc(imgSrc(small(u)))}" alt="" onerror="this.style.visibility='hidden'">` : '<span class="thumb ph">—</span>';
 const btn = (act, id, label, cls = '') => `<button class="act ${cls}" data-act="${act}" data-id="${esc(id)}">${label}</button>`;
 
 /* ---------- الطلبات ---------- */
