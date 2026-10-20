@@ -5,6 +5,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>حلو الملك</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -31,34 +33,50 @@ firebase.initializeApp({
 });
 const auth = firebase.auth();                               // تسجيل الدخول
 const db = firebase.firestore();                            // قاعدة البيانات
+db.settings({ experimentalAutoDetectLongPolling: true });   // اتصال أثبت لو الشبكة بتقفل WebChannel
 const TS = firebase.firestore.FieldValue.serverTimestamp;   // وقت السيرفر
 // Firebase Auth بيحتاج إيميل، فرقم الموبايل بيتحوّل لإيميل داخلي (العميل مش بيشوفه)
 const phoneEmail = (p) => p + '@helwelmalek.app';
 
-/* 1) نجيب كل البيانات من Firebase (لو مردش في 6 ثواني بنكمّل بصفحة فاضية)
-   2) نحمّل script.js
-   3) نراقب settings/meta: الأدمن بيحدّثه مع كل تغيير فيظهر شريط التحديث للزوار */
+/* 1) لو فيه نسخة محفوظة من آخر زيارة: الموقع يفتح فورًا بيها، وبنحدّث البيانات من Firebase في الخلفية
+      (ولو اتغيّرت يظهر شريط "فيه تحديثات")
+   2) لو أول زيارة: بنستنى البيانات لحد 15 ثانية (مع محاولة تانية لو فشلت)، وبعدها نكمّل
+   3) نحمّل script.js
+   4) نراقب settings/meta: الأدمن بيحدّثه مع كل تغيير فيظهر شريط التحديث للزوار */
 (function () {
+  const CK = 'hm_data_v2';
   const rows = (q) => q.docs.map(d => ({ id: d.id, ...d.data() }));
   const one = (r) => r.exists ? r.data() : {};
-  const load = Promise.all([
+  const pull = () => Promise.all([
     db.collection('categories').orderBy('order').get(),
     db.collection('products').orderBy('order').get(),
     db.collection('branches').get(),
     db.collection('settings').doc('home').get(),
     db.collection('settings').doc('promos').get(),
     db.collection('settings').doc('brand').get()
-  ]).then(([c, p, b, h, pr, br]) => {
-    window.REMOTE = { cats: rows(c), prods: rows(p), branches: rows(b), settings: { ...one(h), promos: one(pr) }, brand: one(br) };
-  });
-  Promise.race([load, new Promise(r => setTimeout(r, 6000))]).catch(() => {}).then(() => {
+  ]).then(([c, p, b, h, pr, br]) => ({ cats: rows(c), prods: rows(p), branches: rows(b), settings: { ...one(h), promos: one(pr) }, brand: one(br) }));
+  const fetchData = () => pull().catch(() => new Promise(r => setTimeout(r, 1500)).then(pull));   // محاولة تانية لو فشلت
+  const showUpd = () => { const u = document.getElementById('upd'); u.hidden = false; u.onclick = () => location.reload(); };
+
+  let cached = null, cachedTxt = '';
+  try { cachedTxt = localStorage.getItem(CK) || ''; cached = cachedTxt ? JSON.parse(cachedTxt) : null; } catch (e) {}
+  const fresh = fetchData().then(d => { try { localStorage.setItem(CK, JSON.stringify(d)); } catch (e) {} return d; });
+
+  function boot() {
     const s = document.createElement('script'); s.src = 'script.js'; document.body.appendChild(s);
     let first = true;
-    db.collection('settings').doc('meta').onSnapshot(() => {
-      if (first) { first = false; return; }
-      const u = document.getElementById('upd'); u.hidden = false; u.onclick = () => location.reload();
-    }, () => {});
-  });
+    db.collection('settings').doc('meta').onSnapshot(() => { if (first) { first = false; return; } showUpd(); }, () => {});
+  }
+
+  if (cached && cached.prods) {                       // زيارة متكررة: افتح فورًا
+    window.REMOTE = cached; boot();
+    fresh.then(d => { if (JSON.stringify(d) !== cachedTxt) showUpd(); }).catch(() => {});
+  } else {                                            // أول زيارة: استنى البيانات (15 ثانية)
+    Promise.race([fresh.then(d => { window.REMOTE = d; }), new Promise(r => setTimeout(r, 15000))]).catch(() => {}).then(() => {
+      boot();
+      if (!window.REMOTE) fresh.then(() => showUpd()).catch(() => {});   // لو اتأخرت، نعرض شريط التحديث أول ما توصل
+    });
+  }
 })();
 </script>
 </body>
