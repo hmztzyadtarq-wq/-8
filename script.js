@@ -142,7 +142,8 @@ function foot() {
 }
 
 /* ======== 6) كارت المنتج ======== */
-const pic = (p) => p.img ? `<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">` : `<span class="ph">${I[catIco(p.cat)]}</span>`;
+const cld = (u, w) => /res\.cloudinary\.com\/[^/]+\/image\/upload\/v?\d/.test(u || '') ? u.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${w}/`) : u;   // Cloudinary بيصغّر الصورة ويحوّلها WebP تلقائيًا
+const pic = (p) => p.img ? `<img src="${esc(cld(p.img, 600))}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">` : `<span class="ph">${I[catIco(p.cat)]}</span>`;
 function card(p) {
   const d = disc(p), badge = d ? `خصم ${d}%` : (p.badge || '');
   return `<article class="pc" data-go="#/p/${p.id}"><div class="pi">${badge ? `<span class="bd">${esc(badge)}</span>` : ''}
