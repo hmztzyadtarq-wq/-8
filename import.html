@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>حلو الملك | استيراد المنيو</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+<style>aside{display:none}main{max-width:760px;margin:0 auto}#log{max-height:260px;overflow:auto;margin-top:10px}</style>
+</head>
+<body>
+<main>
+  <div class="top"><div><h1>استيراد المنيو</h1><p>للأدمن بس — بيضيف الأقسام والمنتجات من ملف menu.json</p></div></div>
+  <div class="card" id="loginBox"><h3>تسجيل دخول الأدمن</h3>
+    <form id="lf"><label>الإيميل أو رقم الموبايل</label><input name="email" required autocomplete="username" autocapitalize="none">
+      <label>كلمة المرور</label><input name="pass" type="password" required autocomplete="current-password">
+      <div class="err" id="lerr"></div><button class="btn" style="width:100%">دخول</button></form></div>
+  <div id="app" hidden><div class="card"><h3>جاهز للاستيراد</h3><p id="sum" class="note" style="font-size:14px">...</p>
+    <p class="note">تقدر تضغط الزر أكتر من مرة: المنتجات بتتحدّث ومش بتتكرر.</p>
+    <div style="margin-top:12px"><button class="btn" id="go">استيراد المنيو</button></div><div class="note" id="st"></div><div id="log"></div></div></div>
+</main>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({ apiKey: "AIzaSyCel1QXKeChW1zVhQn4I8k8lVrD5c-OX9s", authDomain: "hellw-elmalek.firebaseapp.com", projectId: "hellw-elmalek", storageBucket: "hellw-elmalek.firebasestorage.app", messagingSenderId: "742581978284", appId: "1:742581978284:web:81bc15b3a2168b5ecb4b09" });
+const auth = firebase.auth(), db = firebase.firestore(), TS = firebase.firestore.FieldValue.serverTimestamp;
+db.settings({ experimentalAutoDetectLongPolling: true });
+const phoneEmail = (p) => p + '@helwelmalek.app', $ = (s) => document.querySelector(s);
+const log = (m) => { const d = document.createElement('div'); d.className = 'li'; d.textContent = m; $('#log').appendChild(d); };
+let MENU = null;
+$('#lf').addEventListener('submit', async (e) => {
+  e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
+  try { const id = f.email.trim(); await auth.signInWithEmailAndPassword(id.includes('@') ? id : phoneEmail(id), f.pass); }
+  catch { $('#lerr').textContent = 'الإيميل/الرقم أو كلمة المرور غلط'; }
+});
+auth.onAuthStateChanged(async (u) => {
+  if (!u) { $('#loginBox').hidden = false; $('#app').hidden = true; return; }
+  try { if (!(await db.collection('admins').doc(u.uid).get()).exists) { $('#lerr').textContent = 'الحساب ده مش أدمن'; await auth.signOut(); return; } }
+  catch { $('#lerr').textContent = 'تعذّر التحقق من الصلاحية'; return; }
+  $('#loginBox').hidden = true; $('#app').hidden = false;
+  try { MENU = await (await fetch('menu.json?t=' + Date.now())).json(); $('#sum').textContent = `${MENU.categories.length} قسم و ${MENU.products.length} منتج`; }
+  catch { $('#sum').textContent = 'مش لاقي menu.json — ارفعه جنب الصفحة دي.'; $('#go').disabled = true; }
+});
+async function imgOk(p) { try { const r = await fetch(p + '?t=' + Date.now(), { cache: 'no-store' }); return r.ok && (r.headers.get('content-type') || '').startsWith('image/'); } catch { return false; } }
+$('#go').onclick = async () => {
+  const btn = $('#go'); btn.disabled = true; $('#log').innerHTML = '';
+  try {
+    const paths = [...new Set(MENU.products.map(p => p.img))]; let miss = 0;
+    for (const p of paths) if (!(await imgOk(p))) { miss++; log('صورة ناقصة: ' + p); }
+    if (miss) { $('#st').textContent = 'وقفت: ارفع فولدر img كامل الأول. مفيش حاجة اتضافت.'; return; }
+    const cs = await db.collection('categories').get(), exist = new Map(cs.docs.map(d => [d.data().name, d.id]));
+    const batch = db.batch(); const base = Date.now();
+    MENU.categories.forEach((c, i) => {
+      const id = exist.get(c.name) || 'cat_' + c.id;
+      batch.set(db.collection('categories').doc(id), { name: c.name, en: c.en || '', subs: [], subsEn: [], img: c.img || '', circle: c.circle !== false, order: (exist.size + i) }, { merge: true });
+    });
+    MENU.products.forEach((p, i) => {
+      batch.set(db.collection('products').doc('p_' + p.id), { name: p.name, en: p.name, cat: p.cat, sub: '', price: Number(p.price), stock: null, section: '', img: p.img,
+        active: true, unit: '', oldPrice: null, badge: '', desc: '', ingredients: '', sizes: [], rating: 0, reviews: 0, order: i, createdAt: TS() }, { merge: true });
+    });
+    await batch.commit();
+    await db.collection('settings').doc('meta').set({ v: Date.now() }).catch(() => {});
+    $('#st').textContent = `تم ✓ — اتضاف/اتحدّث ${MENU.categories.length} قسم و ${MENU.products.length} منتج. افتح الموقع واعمل ريفريش.`;
+  } catch (ex) { $('#st').textContent = 'حصلت مشكلة: ' + (ex.message || ex); }
+  finally { btn.disabled = false; }
+};
+</script>
+</body>
+</html>
