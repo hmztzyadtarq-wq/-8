@@ -66,6 +66,7 @@ firebase.initializeApp({
 });
 const auth = firebase.auth();                       // تسجيل الدخول
 const db = firebase.firestore();                    // قاعدة البيانات
+db.settings({ experimentalAutoDetectLongPolling: true });   // اتصال أثبت لو الشبكة بتقفل WebChannel
 const TS = firebase.firestore.FieldValue.serverTimestamp;   // وقت السيرفر
 // Firebase Auth بيحتاج إيميل، فرقم الموبايل بيتحوّل لإيميل داخلي (العميل مش بيشوفه)
 const phoneEmail = (p) => p + '@helwelmalek.app';
