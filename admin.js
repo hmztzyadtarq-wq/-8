@@ -95,7 +95,7 @@ function deleteImage(url) {}   // الصورة على Cloudinary: بتتشال �
 const S = { orders: [], products: [], cats: [], users: [], messages: [], settings: {}, promos: {}, branches: [], offers: [], brand: {} };
 let unsubs = [];
 function listen(name, key) {
-  return db.collection(name).limit(10).onSnapshot(
+  return db.collection(name).onSnapshot(
     (snap) => {
       S[key] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       if (key === 'orders') { if (S._seen) snap.docChanges().forEach(c => { if (c.type === 'added') newOrderAlert(c.doc.data()); }); S._seen = true; }   // تنبيه بطلب جديد
