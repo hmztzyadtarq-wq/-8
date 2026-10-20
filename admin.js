@@ -85,7 +85,7 @@ async function cloudUpload(file, max, q) {
   return j.secure_url;                          // اللي بيتخزن في المنتج لينك صغير بس
 }
 const uploadImage = (file, max = 800, q = 0.75, mime) => (CLOUD.name && CLOUD.preset && mime !== 'image/png') ? cloudUpload(file, max, q) : resizeImage(file, max, q, mime);
-function deleteImage() {}   // الصورة جوه المستند نفسه، فبتتمسح معاه
+function deleteImage(url) {}   // الصورة على Cloudinary: بتتشال من الموقع بمسح اللينك من القاعدة. مسح الملف نفسه من Cloudinary بيتم من لوحتهم (Media Library) لأن الحذف الآمن محتاج سيرفر
 
 
 /* ================================================================
@@ -332,6 +332,7 @@ function catForm(id) {
     </div>
     <label>صورة القسم (للدايرة)</label><input type="file" name="file" accept="image/*" id="fFile">
     ${c.img ? `<img class="prev" id="prev" src="${esc(imgSrc(c.img))}" alt="">` : '<img class="prev" id="prev" style="display:none" alt="">'}
+    ${c.img ? '<label class="chk"><input type="checkbox" name="rmimg" id="rmimg"> حذف صورة القسم الحالية</label>' : ''}
     <div class="note">لو غيّرت اسم القسم، المنتجات بتتنقل له تلقائي. لو غيّرت اسم قسم فرعي، عدّل المنتجات بتاعته.</div>
     <div class="err" id="ferr"></div>
     <button class="btn">حفظ</button>
@@ -370,7 +371,7 @@ function bannersPage() {
   const b = S.settings.banners || [], pr = S.promos || {};
   const gal = b.map((u, i) => `<figure><img src="${esc(imgSrc(u))}" alt="">${btn('del-banner', String(i), 'حذف')}</figure>`).join('');
   const slot = (k, n) => `<div class="slot">${pr[k] ? `<img src="${esc(imgSrc(pr[k]))}" alt="">` : '<span class="thumb ph" style="width:160px;height:70px;line-height:70px">فاضي</span>'}
-    <div><b>البانر الإعلاني ${n}</b><br><label class="btn sm" style="display:inline-block;margin-top:8px">${pr[k] ? 'استبدال' : 'رفع صورة'}<input type="file" accept="image/*" hidden data-up="${k}"></label></div></div>`;
+    <div><b>البانر الإعلاني ${n}</b><br><label class="btn sm" style="display:inline-block;margin-top:8px">${pr[k] ? 'استبدال' : 'رفع صورة'}<input type="file" accept="image/*" hidden data-up="${k}"></label>${pr[k] ? ` <button class="btn red sm" style="margin-top:8px" data-act="del-promo" data-id="${k}">حذف</button>` : ''}</div></div>`;
   return card('بانرات السلايدر', b.length, `<label class="btn sm">+ إضافة صور<input type="file" accept="image/*" multiple hidden data-up="banner"></label>`,
     (gal ? `<div class="gal">${gal}</div>` : '<div class="empty">مفيش بانرات — الموقع بيعرض الصور الافتراضية.</div>')) +
     card('البانرات الإعلانية', 2, '', slot('p1', 1) + slot('p2', 2));
@@ -517,7 +518,8 @@ $('#modal').addEventListener('submit', async (e) => {
     if (type === 'product') {
       const old = S.products.find(x => x.id === id) || {};
       let img = old.img || '';
-      if (file) { img = await uploadImage(file, 600, 0.74); }
+      if (file) { img = await uploadImage(file, 600, 0.74); if (old.img) deleteImage(old.img); }
+      else if (f.rmimg && old.img) { deleteImage(old.img); img = ''; }
       const data = {
         name: f.name.trim(), en: (f.en || '').trim() || f.name.trim(), cat: f.cat, sub: f.sub || '', price: Number(f.price),
         stock: f.stock === '' ? null : Number(f.stock), section: f.section || '', img, active: !!f.active,
@@ -530,7 +532,8 @@ $('#modal').addEventListener('submit', async (e) => {
     } else {
       const old = S.cats.find(x => x.id === id) || {};
       let img = old.img || '';
-      if (file) { img = await uploadImage(file, 400, 0.74);  }
+      if (file) { img = await uploadImage(file, 400, 0.74); if (old.img) deleteImage(old.img); }
+      else if (f.rmimg && old.img) { deleteImage(old.img); img = ''; }
       const lines = f.subs.split('\n').map(l => l.split('|').map(x => x.trim())).filter(l => l[0]);
       const name = f.name.trim();
       const data = { name, en: (f.en || '').trim(), subs: lines.map(l => l[0]), subsEn: lines.map(l => l[1] || ''), img, circle: !!f.circle, order: Number(f.order) || 0 };
@@ -667,6 +670,7 @@ function productForm(id) {
     ${field('الوصف', `<textarea name="desc" rows="2">${esc(p.desc)}</textarea>`)}${field('المكونات', `<textarea name="ingredients" rows="2">${esc(p.ingredients)}</textarea>`)}
     ${field('صورة المنتج', '<input type="file" name="file" accept="image/*" id="fFile">')}
     ${p.img ? `<img class="prev" id="prev" src="${esc(imgSrc(p.img))}" alt="">` : '<img class="prev" id="prev" style="display:none" alt="">'}
+    ${p.img ? '<label class="chk"><input type="checkbox" name="rmimg" id="rmimg"> حذف الصورة الحالية</label>' : ''}
     <label class="chk"><input type="checkbox" name="active" ${p.active === false ? '' : 'checked'}> ظاهر في الموقع</label>
     <div class="err" id="ferr"></div><button class="btn">حفظ</button></form>`);
   fillSubs(p.sub);
@@ -865,3 +869,46 @@ $('#view').addEventListener('submit', async (e) => {                  // فور�
     err(/wrong|invalid-credential|invalid-login/.test(c) ? 'كلمة المرور الحالية غلط' : c === 'auth/email-already-in-use' ? 'الرقم ده مسجّل قبل كده' : c === 'auth/weak-password' ? 'كلمة المرور ضعيفة' : 'تعذّر التنفيذ: ' + (c || ex.message));
   }
 }, true);
+
+
+/* ================================================================
+   إضافات: حذف الصور (منتج / قسم / بانر إعلاني) + تنظيف
+   ================================================================ */
+$('#modal').addEventListener('change', (e) => {                        // تحديد "حذف الصورة" يخفي المعاينة
+  if (e.target.id !== 'rmimg') return;
+  const p = $('#prev'); if (p) p.style.opacity = e.target.checked ? '.25' : '';
+  const fl = $('#fFile'); if (fl && e.target.checked) fl.value = '';
+});
+Object.assign(ACT, {
+  'del-promo': guard(async (k) => {                                    // حذف البانر الإعلاني 1 / 2
+    const url = (S.promos || {})[k];
+    if (url && confirm('حذف البانر الإعلاني؟')) {
+      await db.collection('settings').doc('promos').set({ [k]: firebase.firestore.FieldValue.delete() }, { merge: true });
+      deleteImage(url); touch(); showToast('تم الحذف ✓');
+    }
+  }),
+  'del-banner': guard(async (i) => {                                   // حذف بانر السلايدر (بنعيد كتابة القايمة من غير الصورة)
+    const arr = S.settings.banners || [], url = arr[+i];
+    if (url && confirm('حذف البانر؟')) {
+      await db.collection('settings').doc('home').set({ banners: arr.filter((_, x) => x !== +i) }, { merge: true });
+      deleteImage(url); touch(); showToast('تم الحذف ✓');
+    }
+  }),
+  'del-product': guard(async (id) => {
+    const p = S.products.find(x => x.id === id);
+    if (p && confirm('حذف "' + p.name + '"؟')) { await db.collection('products').doc(id).delete(); if (p.img) deleteImage(p.img); touch(); showToast('تم الحذف'); }
+  }),
+  'del-cat': guard(async (id) => {
+    const c = S.cats.find(x => x.id === id), n = S.products.filter(p => p.cat === c.name).length;
+    if (confirm('حذف قسم "' + c.name + '"؟' + (n ? `\nفيه ${n} منتج مش هيظهروا في أي قسم.` : ''))) { await db.collection('categories').doc(id).delete(); if (c.img) deleteImage(c.img); touch(); showToast('تم الحذف'); }
+  }),
+  'wipe-products': guard(async () => {                                 // بيمسح كل المنتجات حتى لو اللوحة معروض فيها 10 بس
+    const snap = await db.collection('products').get();
+    if (!snap.size) return showToast('مفيش منتجات');
+    if (!confirm('حذف كل المنتجات (' + snap.size + ') نهائيًا؟')) return;
+    for (let i = 0; i < snap.docs.length; i += 400) { const b = db.batch(); snap.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit(); }
+    touch(); showToast('تم حذف كل المنتجات ✓');
+  }),
+  'toggle-offer': guard(async (id) => { const o = S.offers.find(x => x.id === id); await db.collection('offers').doc(id).update({ active: o.active === false }); touch(); }),
+  'del-offer': guard(async (id) => { if (confirm('حذف العرض؟')) { await db.collection('offers').doc(id).delete(); touch(); showToast('تم الحذف'); } })
+});
