@@ -57,14 +57,16 @@ const imgSrc = (u) => /^(https?:|data:)/.test(u || '') ? u : (u || '');
 
 // الصور بتتصغّر وبتتخزن جوه Firestore نفسه (من غير Firebase Storage) كنص base64
 // max = أقصى عرض/طول بالبكسل، q = الجودة (0 إلى 1)
+const WEBP_OK = (() => { try { return document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp'); } catch { return false; } })();
 function resizeImage(file, max, q, mime = 'image/jpeg') {
+  if (mime === 'image/jpeg' && WEBP_OK) mime = 'image/webp';          // WebP أخف بحوالي 30% من JPEG (لو المتصفح بيدعمه)
   return new Promise((resolve, reject) => {
     const img = new Image(), url = URL.createObjectURL(file);
     img.onload = () => {
       const k = Math.min(1, max / Math.max(img.width, img.height));
       const c = document.createElement('canvas');
       c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-      const g = c.getContext('2d'); if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); } g.drawImage(img, 0, 0, c.width, c.height);
+      const g = c.getContext('2d'); if (mime !== 'image/png') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); } g.drawImage(img, 0, 0, c.width, c.height);
       URL.revokeObjectURL(url); resolve(c.toDataURL(mime, q));
     };
     img.onerror = () => reject(new Error('الملف مش صورة صالحة'));
@@ -474,7 +476,7 @@ $('#view').addEventListener('change', guard(async (e) => {
     const ref = db.collection('settings').doc('home'), files = [...t.files];
     if (t.dataset.up === 'banner') {
       for (const f of files) {
-        const url = await uploadImage(f, 1400, 0.7);
+        const url = await uploadImage(f, 1200, 0.72);
         // مستند Firestore أقصاه 1 ميجا، فبنتأكد إن مجموع البانرات مش كبير
         const used = (S.settings.banners || []).reduce((n, x) => n + x.length, 0);
         if (used + url.length > 900000) throw new Error('حجم البانرات كبير — احذف بانر قديم الأول');
@@ -482,7 +484,7 @@ $('#view').addEventListener('change', guard(async (e) => {
         S.settings.banners = [...(S.settings.banners || []), url];
       }
     } else {
-      const url = await uploadImage(files[0], 1000, 0.7);
+      const url = await uploadImage(files[0], 900, 0.72);
       await db.collection('settings').doc('promos').set({ [t.dataset.up]: url }, { merge: true });
     }
     t.value = ''; touch(); showToast('تم الرفع ✓');
@@ -503,7 +505,7 @@ $('#modal').addEventListener('submit', async (e) => {
     if (type === 'product') {
       const old = S.products.find(x => x.id === id) || {};
       let img = old.img || '';
-      if (file) { img = await uploadImage(file, 800, 0.75); }
+      if (file) { img = await uploadImage(file, 600, 0.74); }
       const data = {
         name: f.name.trim(), en: (f.en || '').trim() || f.name.trim(), cat: f.cat, sub: f.sub || '', price: Number(f.price),
         stock: f.stock === '' ? null : Number(f.stock), section: f.section || '', img, active: !!f.active,
@@ -516,7 +518,7 @@ $('#modal').addEventListener('submit', async (e) => {
     } else {
       const old = S.cats.find(x => x.id === id) || {};
       let img = old.img || '';
-      if (file) { img = await uploadImage(file, 500, 0.75);  }
+      if (file) { img = await uploadImage(file, 400, 0.74);  }
       const lines = f.subs.split('\n').map(l => l.split('|').map(x => x.trim())).filter(l => l[0]);
       const name = f.name.trim();
       const data = { name, en: (f.en || '').trim(), subs: lines.map(l => l[0]), subsEn: lines.map(l => l[1] || ''), img, circle: !!f.circle, order: Number(f.order) || 0 };
