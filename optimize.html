@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>حلو الملك | تخفيف الصور</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+<style>
+  aside { display: none; }
+  main { max-width: 760px; margin: 0 auto; }
+  ol { margin: 8px 18px 0 0; line-height: 1.9; }
+  #log { max-height: 260px; overflow: auto; }
+  .bar2 { height: 8px; border-radius: 5px; background: var(--line); overflow: hidden; margin: 10px 0; }
+  .bar2 i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .2s; }
+  .btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><div><h1>تخفيف صور المنتجات</h1><p>أداة لمرة واحدة — للأدمن بس</p></div></div>
+
+  <div class="card" id="loginBox">
+    <h3>تسجيل دخول الأدمن</h3>
+    <form id="lf">
+      <label>الإيميل أو رقم الموبايل</label><input name="email" required autocomplete="username" autocapitalize="none">
+      <label>كلمة المرور</label><input name="pass" type="password" required autocomplete="current-password">
+      <div class="err" id="lerr"></div>
+      <button class="btn" style="width:100%">دخول</button>
+    </form>
+  </div>
+
+  <div id="app" hidden>
+    <div class="card">
+      <h3>الفكرة</h3>
+      <p class="note" style="font-size:14px">الصور دلوقتي متخزنة جوه قاعدة البيانات نفسها، فالموقع بينزّلها كلها قبل ما يعرض أي حاجة — وده سبب البطء ورسالة "تعذر الوصول للبيانات". الأداة دي بتنقل الصور لملفات خفيفة (WebP) بتتحمّل من الاستضافة، وقاعدة البيانات بتفضل فيها أسماء الملفات بس.</p>
+      <ol>
+        <li>اضغط <b>١) جهّز الصور</b> — هينزل ملف <b>img.zip</b> فيه الصور مصغّرة.</li>
+        <li>فُكّ الضغط وارفع فولدر <b>img</b> على الاستضافة جنب <b>index.html</b>.</li>
+        <li>اضغط <b>٢) حدّث قاعدة البيانات</b> — بتتأكد الأول إن الصور اترفعت، وبعدين تغيّر المسارات.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <div class="btns">
+        <button class="btn" id="b1">١) جهّز الصور (ZIP)</button>
+        <button class="btn ghost" id="b2">٢) حدّث قاعدة البيانات</button>
+      </div>
+      <div class="bar2"><i id="pb"></i></div>
+      <div class="note" id="st">جاهز.</div>
+      <div id="log" style="margin-top:10px"></div>
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyCel1QXKeChW1zVhQn4I8k8lVrD5c-OX9s",
+  authDomain: "hellw-elmalek.firebaseapp.com",
+  projectId: "hellw-elmalek",
+  storageBucket: "hellw-elmalek.firebasestorage.app",
+  messagingSenderId: "742581978284",
+  appId: "1:742581978284:web:81bc15b3a2168b5ecb4b09"
+});
+const auth = firebase.auth(), db = firebase.firestore();
+db.settings({ experimentalAutoDetectLongPolling: true });
+const phoneEmail = (p) => p + '@helwelmalek.app';
+const $ = (s) => document.querySelector(s);
+
+/* WebP لو المتصفح بيدعم الترميز (كروم/إيدج/فايرفوكس)، غير كده JPEG */
+const WEBP = (() => { try { return document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp'); } catch { return false; } })();
+const EXT = WEBP ? 'webp' : 'jpg', MIME = WEBP ? 'image/webp' : 'image/jpeg';
+const QUALITY = 0.76;
+const SETS = [['products', 'p', 600], ['categories', 'c', 400]];   // [المجموعة, بادئة الاسم, أقصى حجم بالبكسل]
+
+const log = (m) => { const d = document.createElement('div'); d.className = 'li'; d.textContent = m; $('#log').appendChild(d); $('#log').scrollTop = 1e9; };
+const prog = (i, n, t) => { $('#pb').style.width = (n ? i / n * 100 : 0) + '%'; if (t) $('#st').textContent = t; };
+const busy = (v) => { $('#b1').disabled = v; $('#b2').disabled = v; };
+
+/* دخول الأدمن */
+$('#lf').addEventListener('submit', async (e) => {
+  e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)), err = (m) => { $('#lerr').textContent = m; };
+  try { const id = f.email.trim(); await auth.signInWithEmailAndPassword(id.includes('@') ? id : phoneEmail(id), f.pass); }
+  catch { err('الإيميل/الرقم أو كلمة المرور غلط'); }
+});
+auth.onAuthStateChanged(async (u) => {
+  if (!u) { $('#loginBox').hidden = false; $('#app').hidden = true; return; }
+  try {
+    if (!(await db.collection('admins').doc(u.uid).get()).exists) { $('#lerr').textContent = 'الحساب ده مش أدمن'; await auth.signOut(); return; }
+  } catch { $('#lerr').textContent = 'تعذّر التحقق من الصلاحية'; return; }
+  $('#loginBox').hidden = true; $('#app').hidden = false;
+  if (!WEBP) log('تنبيه: المتصفح ده مش بيدعم WebP، هتتحوّل الصور JPEG (حجمها أكبر شوية). الأفضل تفتح الأداة من كروم.');
+});
+
+/* بنجمع كل الصور اللي لسه base64 */
+async function collect() {
+  const out = [];
+  for (const [coll, pre, max] of SETS) {
+    const s = await db.collection(coll).get();
+    s.docs.forEach(d => {
+      const img = d.data().img;
+      if (typeof img === 'string' && img.startsWith('data:')) out.push({ coll, id: d.id, name: d.data().name || d.id, src: img, max, path: `img/${pre}_${d.id}.${EXT}` });
+    });
+  }
+  return out;
+}
+function encode(src, max) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas');
+      c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      c.toBlob(b => b ? res(b) : rej(new Error('فشل الترميز')), MIME, QUALITY);
+    };
+    im.onerror = () => rej(new Error('صورة تالفة'));
+    im.src = src;
+  });
+}
+const kb = (n) => (n / 1024).toFixed(0) + ' ك.ب';
+
+/* ١) تجهيز ZIP */
+$('#b1').onclick = async () => {
+  busy(true); $('#log').innerHTML = '';
+  try {
+    prog(0, 1, 'بقرا الصور من قاعدة البيانات...');
+    const items = await collect();
+    if (!items.length) { prog(0, 1, 'مفيش صور محتاجة تخفيف ✓'); return; }
+    const zip = new JSZip(); let before = 0, after = 0, bad = 0;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i]; prog(i, items.length, `بضغط ${i + 1} من ${items.length}: ${it.name}`);
+      try { const b = await encode(it.src, it.max); zip.file(it.path, b); before += it.src.length * 0.75; after += b.size; }
+      catch (ex) { bad++; log(`تخطّي "${it.name}": ${ex.message}`); }
+    }
+    prog(items.length, items.length, 'بجهّز الملف...');
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'img.zip'; document.body.appendChild(a); a.click(); a.remove();
+    log(`عدد الصور: ${items.length - bad} — قبل: ${kb(before)} ← بعد: ${kb(after)}`);
+    prog(items.length, items.length, 'تم ✓ — فُكّ img.zip وارفع فولدر img على الاستضافة، وبعدين اضغط الزر ٢');
+  } catch (ex) { log('خطأ: ' + (ex.message || ex)); prog(0, 1, 'حصلت مشكلة'); }
+  finally { busy(false); }
+};
+
+/* ٢) تحديث المسارات في قاعدة البيانات (بعد التأكد إن الصور اترفعت) */
+$('#b2').onclick = async () => {
+  busy(true); $('#log').innerHTML = '';
+  try {
+    prog(0, 1, 'بقرا البيانات...');
+    const items = await collect();
+    if (!items.length) { prog(1, 1, 'مفيش حاجة محتاجة تحديث ✓'); return; }
+    const probe = [items[0], items[items.length >> 1], items[items.length - 1]];
+    for (const it of probe) {
+      let ok = false;
+      try { const r = await fetch(it.path + '?t=' + Date.now(), { cache: 'no-store' }); ok = r.ok && (r.headers.get('content-type') || '').startsWith('image/'); } catch {}
+      if (!ok) { log('الصورة دي مش موجودة على الموقع: ' + it.path); prog(0, 1, 'وقفت — ارفع فولدر img الأول جنب هذه الصفحة وجرّب تاني. مفيش حاجة اتغيّرت.'); return; }
+    }
+    if (!confirm(`هتتحدّث ${items.length} صورة في قاعدة البيانات. الصور الأصلية الكبيرة هتتمسح منها. كمّل؟`)) { prog(0, 1, 'اتلغى.'); return; }
+    for (let i = 0; i < items.length; i += 400) {
+      const batch = db.batch();
+      items.slice(i, i + 400).forEach(it => batch.update(db.collection(it.coll).doc(it.id), { img: it.path }));
+      await batch.commit(); prog(Math.min(i + 400, items.length), items.length, 'بحدّث...');
+    }
+    await db.collection('settings').doc('meta').set({ v: Date.now() }).catch(() => {});
+    log(`اتحدّث ${items.length} مسار صورة.`); prog(1, 1, 'تم ✓ — افتح الموقع وجرّب (اعمل ريفريش مرة).');
+  } catch (ex) { log('خطأ: ' + (ex.message || ex)); prog(0, 1, 'حصلت مشكلة'); }
+  finally { busy(false); }
+};
+</script>
+</body>
+</html>
