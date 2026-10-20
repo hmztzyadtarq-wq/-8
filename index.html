@@ -53,8 +53,9 @@ const phoneEmail = (p) => p + '@helwelmalek.app';
     db.collection('branches').get(),
     db.collection('settings').doc('home').get(),
     db.collection('settings').doc('promos').get(),
-    db.collection('settings').doc('brand').get()
-  ]).then(([c, p, b, h, pr, br]) => ({ cats: rows(c), prods: rows(p), branches: rows(b), settings: { ...one(h), promos: one(pr) }, brand: one(br) }));
+    db.collection('settings').doc('brand').get(),
+    db.collection('settings').doc('meta').get()
+  ]).then(([c, p, b, h, pr, br, mt]) => ({ cats: rows(c), prods: rows(p), branches: rows(b), settings: { ...one(h), promos: one(pr) }, brand: one(br), v: (one(mt).v || 0) }));
   const fetchData = () => pull().catch(() => new Promise(r => setTimeout(r, 1500)).then(pull));   // محاولة تانية لو فشلت
   const showUpd = () => { const u = document.getElementById('upd'); u.hidden = false; u.onclick = () => location.reload(); };
 
@@ -64,13 +65,17 @@ const phoneEmail = (p) => p + '@helwelmalek.app';
 
   function boot() {
     const s = document.createElement('script'); s.src = 'script.js'; document.body.appendChild(s);
-    let first = true;
-    db.collection('settings').doc('meta').onSnapshot(() => { if (first) { first = false; return; } showUpd(); }, () => {});
+    let known = null;                                 // رقم النسخة الحالي: الأدمن بيغيّره مع كل إضافة/تعديل
+    db.collection('settings').doc('meta').onSnapshot((s) => {
+      const v = s.exists ? (s.data().v || 0) : 0;
+      if (known === null) { known = v; return; }
+      if (v !== known) { known = v; showUpd(); }
+    }, () => {});
   }
 
   if (cached && cached.prods) {                       // زيارة متكررة: افتح فورًا
     window.REMOTE = cached; boot();
-    fresh.then(d => { if (JSON.stringify(d) !== cachedTxt) showUpd(); }).catch(() => {});
+    fresh.then(d => { if ((d.v || 0) !== (cached.v || 0)) showUpd(); }).catch(() => {});   // شريط التحديث بس لو الأدمن غيّر حاجة من آخر زيارة
   } else {                                            // أول زيارة: استنى البيانات (15 ثانية)
     Promise.race([fresh.then(d => { window.REMOTE = d; }), new Promise(r => setTimeout(r, 15000))]).catch(() => {}).then(() => {
       boot();
