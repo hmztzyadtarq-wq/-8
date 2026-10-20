@@ -142,7 +142,7 @@ function foot() {
 }
 
 /* ======== 6) كارت المنتج ======== */
-const pic = (p) => p.img ? `<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy">` : `<span class="ph">${I[catIco(p.cat)]}</span>`;
+const pic = (p) => p.img ? `<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">` : `<span class="ph">${I[catIco(p.cat)]}</span>`;
 function card(p) {
   const d = disc(p), badge = d ? `خصم ${d}%` : (p.badge || '');
   return `<article class="pc" data-go="#/p/${p.id}"><div class="pi">${badge ? `<span class="bd">${esc(badge)}</span>` : ''}
