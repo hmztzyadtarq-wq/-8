@@ -4,28 +4,28 @@
 /* variables.css — كل ألوان لوحة التحكم هنا، غيّر اللون من مكان واحد بس */
 
 :root {
-  /* الخلفيات: لبني غامق (بترولي) */
-  --bg:   #2E6478;   /* خلفية الصفحة */
-  --card: #3A7388;   /* الكروت */
-  --line: #5A8FA1;   /* الحدود والخطوط */
+  /* الخلفيات: لافندر فاتح + كروت بيضاء (زي الموقع) */
+  --bg:   #EFE6F7;   /* خلفية الصفحة */
+  --card: #FFFFFF;   /* الكروت */
+  --line: #DCCFEB;   /* الحدود والخطوط */
 
-  /* الموف: الشريط الجانبي */
-  --side:       #4A2147;
+  /* الشريط الجانبي: بنفسجي */
+  --side:       #4B2E83;
   --side-text:  #F1E8F3;
-  --side-hover: #5E2A5A;
-  --purple:     #9B5A96;   /* موف للتفاصيل (الأشرطة، الحدود) */
+  --side-hover: #5E3F9A;
+  --purple:     #683898;   /* بنفسجي للتفاصيل (الأشرطة، الحدود) */
 
   /* النصوص */
-  --text:  #F6F2F8;
-  --muted: #C3DAE3;
+  --text:  #2A1F3D;
+  --muted: #7A6E8F;
 
   /* ألوان مساعدة */
-  --gold:      #E4BC4E;
-  --gold-soft: #4E8598;
-  --milk:      #EEE3CC;   /* التبويب المفتوح */
-  --green:     #A6E58A;   /* زيادة / تم التسليم */
-  --red:       #FFA3AD;   /* نقص */
-  --navy:      #9FB4E8;   /* قيد التحضير */
+  --gold:      #683898;   /* لون الأزرار والروابط (بنفسجي) */
+  --gold-soft: #E3D5F2;
+  --milk:      #7CC4EC;   /* التبويب المفتوح (أزرق) */
+  --green:     #1F8A4C;   /* زيادة / تم التسليم */
+  --red:       #C0392B;   /* نقص */
+  --navy:      #4B2E83;   /* قيد التحضير */
 }
 
 /* ================================================================
@@ -99,7 +99,7 @@ aside {
   background: var(--milk);
   color: var(--side);
   opacity: 1;
-  box-shadow: inset -4px 0 0 var(--gold);
+  box-shadow: inset -4px 0 0 #fff;
 }
 
 .nav svg {
@@ -189,7 +189,7 @@ main {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 14px;
-  box-shadow: 0 8px 24px #0006;
+  box-shadow: 0 8px 24px rgba(75,46,131,.25);
 }
 
 .drop.show { display: block; }
@@ -433,10 +433,10 @@ input, select, textarea { font: inherit; color: var(--text); background: var(--b
 input:focus, select:focus, textarea:focus { border-color: var(--gold); }
 select option { color: #222; }
 label { display: block; margin: 12px 0 5px; font-size: 14px; color: var(--muted); }
-.btn { display: inline-block; padding: 9px 18px; border-radius: 10px; background: var(--gold); color: #3a2a00; font-weight: 700; font-size: 14px; cursor: pointer; text-align: center; }
+.btn { display: inline-block; padding: 9px 18px; border-radius: 10px; background: var(--gold); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; text-align: center; }
 .btn:disabled { opacity: .6; cursor: wait; }
 .btn.ghost { background: none; border: 1px solid var(--line); color: var(--text); }
-.btn.red { background: var(--red); color: #5a0f1a; }
+.btn.red { background: var(--red); color: #fff; }
 .btn.sm { padding: 5px 12px; font-size: 13px; }
 .err { min-height: 18px; margin: 8px 0; font-size: 13px; color: var(--red); }
 .tw { overflow-x: auto; }
