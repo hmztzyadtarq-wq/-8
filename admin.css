@@ -481,3 +481,14 @@ td.wrap { white-space: normal; min-width: 160px; }
 .stk{width:120px}.sf{margin-bottom:6px}.sf .btn.sm{margin-top:8px}
 .card h3{margin-bottom:10px}
 .ch>div{flex-wrap:wrap}
+
+/* ---- الإصدار 3: العملاء والنقاط والعروض ---- */
+.stg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.stg div{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+.stg small{display:block;font-size:12px;color:var(--muted)}
+.stg b{font-size:18px;font-weight:600}
+.chip.off{white-space:nowrap}
+td .chip{margin:1px 0}
+textarea{resize:vertical;font:inherit}
+.sf textarea{min-height:70px}
+@media (max-width:600px){.stg{grid-template-columns:repeat(2,1fr)}}
