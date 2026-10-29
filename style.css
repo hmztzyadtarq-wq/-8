@@ -13,7 +13,7 @@ input,select,textarea{font:inherit;color:inherit}svg{display:block}img{max-width
 .hrow{display:flex;align-items:center;gap:26px;padding-top:16px;padding-bottom:16px}
 .logo{display:flex;align-items:center;gap:12px;flex-shrink:0}
 .lg-ic{width:58px;height:58px;border-radius:50%;background:var(--pur);color:#fff;display:grid;place-items:center;box-shadow:0 0 0 3px #fff,0 0 0 5px var(--pur);margin:5px}
-.lg-ic svg{width:30px;height:30px}.lg-img{width:58px;height:58px;object-fit:contain}
+.lg-ic svg{width:30px;height:30px}.lg-img{width:90px;height:90px;object-fit:contain}
 .lg-tx{display:flex;flex-direction:column;line-height:1.1}.lg-tx b{font-size:28px;font-weight:800;color:var(--navy)}.lg-tx small{font-size:11px;letter-spacing:3px;color:var(--mut)}
 .search{flex:1;max-width:540px;display:flex;align-items:center;background:#F1F9FC;border-radius:40px;padding:0 18px}
 .search input{flex:1;border:0;background:none;outline:0;padding:13px 0;min-width:0}.search svg{width:20px;height:20px;color:var(--navy)}
@@ -121,7 +121,7 @@ html[dir=rtl] .cn.p svg,html[dir=ltr] .cn.n svg{transform:scaleX(-1)}
 input,select,textarea{font-size:16px}
 .topbar{flex-wrap:nowrap;justify-content:flex-start;gap:18px;overflow-x:auto;scrollbar-width:none;white-space:nowrap;font-size:11.5px;padding:8px 12px}.topbar::-webkit-scrollbar{display:none}.topbar svg{width:14px;height:14px}
 .hrow{flex-wrap:wrap;gap:10px;padding-top:12px;padding-bottom:0}
-.logo{order:2;gap:8px}.lg-ic{width:42px;height:42px;margin:3px}.lg-ic svg{width:22px;height:22px}.lg-img{width:44px;height:44px}.lg-tx b{font-size:20px}.lg-tx small{font-size:8px;letter-spacing:2px}
+.logo{order:2;gap:8px}.lg-ic{width:42px;height:42px;margin:3px}.lg-ic svg{width:22px;height:22px}.lg-img{width:64px;height:64px}.lg-tx b{font-size:20px}.lg-tx small{font-size:8px;letter-spacing:2px}
 .search{order:3;flex:1 1 0;min-width:0;max-width:none;height:44px;padding:0 14px}.search input{padding:0}
 .acts{order:4;flex-basis:100%;margin:0;justify-content:space-between;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--line);padding:9px 0}.acts::-webkit-scrollbar{display:none}
 .act{padding:0 8px;font-size:12.5px;gap:5px}.act svg{width:18px;height:18px}.act em{font-size:11.5px;color:var(--pur)}
