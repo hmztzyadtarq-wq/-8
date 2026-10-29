@@ -1,5 +1,5 @@
 /* style.css — تنسيق الموقع. الألوان كلها في :root فغيّرها من مكان واحد */
-:root{--gold:#D4AF5F;--gold2:#B8923F;--navy:#4B2E83;--cream:#EFE6F7;--beige:#E3D5F2;--maroon:#664498;--line:#DCCFEB;--text:#2A1F3D;--mut:#7A6E8F;--foot:#7CC4EC;--ok:#1f8a4c;--red:#c0392b;--blue:#7CC4EC;--pur:#683898;--pur2:#4B2E83;--lav:#F1E9FA}
+:root{--gold:#D4AF5F;--gold2:#B8923F;--navy:#4B2E83;--cream:#FFFFFF;--beige:#E3D5F2;--maroon:#664498;--line:#DCCFEB;--text:#2A1F3D;--mut:#7A6E8F;--foot:#7CC4EC;--ok:#1f8a4c;--red:#c0392b;--blue:#7CC4EC;--pur:#683898;--pur2:#4B2E83;--lav:#F1E9FA}
 *{box-sizing:border-box;margin:0}
 body{font-family:'Cairo',Tahoma,sans-serif;background:var(--cream);color:var(--text);line-height:1.5}
 a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
