@@ -139,6 +139,7 @@ const cartCount = () => lines().reduce((a, l) => a + l.qty, 0);
 const saveCart = () => { store.set('hm_cart2', cart); head(); };
 function addToCart(id, size = '', n = 1) {
   const p = byId(id); if (!p || out(p)) return toast('نفد المخزون');
+  if (BR.length && !branchOf(myBranch)) { pendingAdd = [id, size, n]; return branchDrawer(); }   // أول إضافة للسلة: اختار الفرع الأول
   const c = cart.find(x => x.id === id && x.size === size);
   if (p.stock != null && (c ? c.qty : 0) + n > p.stock) return toast('الكمية المتاحة ' + p.stock + ' فقط');
   c ? c.qty += n : cart.push({ id, size, qty: n });
@@ -223,10 +224,10 @@ window.addEventListener('hashchange', route);
 
 /* ---------- الرئيسية ---------- */
 let slideI = 0;                                        // رقم البانر الظاهر دلوقتي
-function fitSlider() {                                 // (الطول بقى بيتحدد من CSS والصورة بتظهر كاملة)
-  return; const s = $('#slides'); if (!s) return;
-  const im = s.children[slideI] && s.children[slideI].querySelector('img');
-  if (im && im.clientHeight) s.parentElement.style.height = im.clientHeight + 'px';
+function fitSlider() {                                 // نسبة البانر بتتاخد من أول صورة، فالصورة بتظهر كاملة بحجم البانر
+  const s = $('#slides'); if (!s) return;
+  const im = s.querySelector('img'); if (!im || !im.naturalWidth) return;
+  s.parentElement.style.setProperty('--ar', Math.min(5, Math.max(1.6, im.naturalWidth / im.naturalHeight)).toFixed(3));
 }
 window.addEventListener('resize', fitSlider);
 document.addEventListener('load', (e) => { if (e.target.tagName === 'IMG' && e.target.closest('#slides')) fitSlider(); }, true);
@@ -500,7 +501,7 @@ async function confirmOrder() {
   let wa = String(br.phone || '').replace(/\D/g, ''); if (wa.startsWith('0')) wa = '20' + wa.slice(1);
   const pts = earnFor(P.after);
   render(`<div class="wrap empty"><h2>تم استلام طلبك ✓</h2><p>رقم الطلب #${orderNo} — فرع ${esc(br.name)}</p><p>هنتواصل معاك على ${esc(order.phone)}</p>${pts > 0 ? `<p class="erp" style="justify-content:center">${I.crown}<span>هتكسب ${pts} نقطة بعد تسليم الطلب</span></p>` : ''}
-   <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap"><a class="gbtn" href="#/track">تتبع طلبك</a>${notifItems().some(o => !o.auto) ? `<button class="gbtn w" style="border:1px solid var(--navy)" data-act="notifs">شوف العروض المتاحة</button>` : ''}${wa ? `<a class="gbtn w" style="border:1px solid var(--navy)" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${msg}">ابعت تفاصيل الطلب للفرع (واتساب)</a>` : ''}</div></div>`);
+   <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap"><a class="gbtn" href="#/track">تتبع طلبك</a>${notifItems().some(o => !o.auto) ? `<button class="gbtn w" style="border:1px solid var(--navy)" data-act="notifs">شوف العروض المتاحة</button>` : ''}${wa ? `<a class="gbtn w" style="border:1px solid var(--navy)" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${esc(msg)}">ابعت تفاصيل الطلب للفرع (واتساب)</a>` : ''}</div></div>`);
 }
 
 /* ---------- تتبع الطلب (لحظي) ---------- */
@@ -544,14 +545,71 @@ function authDrawer(tab = 'login', cb) {
 }
 function acctDrawer() {
   $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn"><button class="dx" data-act="dclose">×</button><h2>حسابي</h2><p class="dsub"><b>${esc(user.name || '')}</b><br><span dir="ltr">${esc(user.phone || user.email || '')}</span></p>
-   <a class="gbtn" href="#/track" data-act="dclose">تتبع طلباتي</a><button class="gbtn w" style="width:100%;margin-top:12px;border:1px solid var(--navy)" data-act="logout">تسجيل خروج</button></div>`;
+   <a class="gbtn" href="#/track" data-act="dclose">تتبع طلباتي</a><button class="gbtn w" style="width:100%;margin-top:12px;border:1px solid var(--navy)" data-act="logout">تسجيل خروج</button><button class="gbtn w dgr" style="width:100%;margin-top:12px;border:1px solid" data-act="delacc">حذف الحساب نهائيًا</button></div>`;
   $('#drawer').classList.add('open'); tr($('#drawer'));
+}
+/* ---------- اختيار الفرع: أول إضافة للسلة + زرار "تغيير" في الهيدر ---------- */
+let pendingAdd = null, userPos = null, mapObj = null, lfP = null;
+const xy = (b) => (b.lat != null && b.lat !== '' && b.lng != null && b.lng !== '' && isFinite(+b.lat) && isFinite(+b.lng)) ? { lat: +b.lat, lng: +b.lng } : null;
+const kmBetween = (a, b) => { const r = (x) => x * Math.PI / 180, h = Math.sin(r(b.lat - a.lat) / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lng - a.lng) / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
+const nearestTo = (p) => BR.map(b => ({ b, d: xy(b) ? kmBetween(p, xy(b)) : null })).filter(x => x.d !== null).sort((a, b) => a.d - b.d)[0] || null;
+const killMap = () => { if (mapObj) { try { mapObj.remove(); } catch (e) {} mapObj = null; } };
+function loadLeaflet() {
+  if (window.L && window.L.map) return Promise.resolve();
+  return lfP || (lfP = new Promise((ok, no) => {
+    const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css'; document.head.appendChild(l);
+    const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; s.onload = ok; s.onerror = () => { lfP = null; no(); }; document.head.appendChild(s);
+  }));
+}
+function branchItems(q = '') {                       // القايمة بتتبني من BR (الفروع اللي الأدمن ضافها / مسحها)
+  q = q.trim().toLowerCase();
+  return BR.filter(b => !q || (b.name + ' ' + (b.area || '')).toLowerCase().includes(q))
+    .map(b => ({ b, d: userPos && xy(b) ? kmBetween(userPos, xy(b)) : null })).sort((x, y) => (x.d ?? 1e9) - (y.d ?? 1e9))
+    .map(({ b, d }) => `<button class="bo ${b.id === myBranch ? 'on' : ''}" data-act="pick" data-id="${esc(b.id)}"><b>${esc(b.name)}</b><small>${esc(b.area || '')}${branchState(b) === null ? '' : branchState(b) ? ' — مفتوح الآن' : ' — مقفول الآن'}${d !== null ? ' — يبعد ' + d.toFixed(1) + ' كم' : ''}</small></button>`).join('') || '<div class="empty">لا توجد فروع مطابقة</div>';
 }
 function branchDrawer() {
-  $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn"><button class="dx" data-act="dclose">×</button><h2>اختر الفرع</h2><p class="dsub">اطلب من أقرب فرع ليك</p>
-   ${BR.map(b => `<button class="bo ${b.id === myBranch ? 'on' : ''}" data-act="pick" data-id="${b.id}"><b>${esc(b.name)}</b><small>${esc(b.area || '')}${branchState(b) === null ? '' : branchState(b) ? ' — مفتوح الآن' : ' — مقفول الآن'}</small></button>`).join('') || '<div class="empty">لا توجد فروع متاحة حاليًا</div>'}</div>`;
+  killMap();
+  $('#drawer').innerHTML = `<div class="dov" data-act="bclose"></div><div class="dpn"><button class="dx" data-act="bclose">×</button><h2>اختر الفرع الأقرب لديك</h2><p class="dsub">${pendingAdd ? 'محتاجين نعرف أقرب فرع ليك قبل ما نضيف المنتج للسلة' : 'اطلب من أقرب فرع ليك'}</p>
+   <button class="gbtn" id="bgeo" data-act="bgeo">📍 تحديد أقرب فرع تلقائي</button>
+   <button class="gbtn w" style="width:100%;margin-top:10px;border:1px solid var(--navy)" data-act="bmap">🗺️ تحديد مكان على الخريطة</button>
+   <div id="bmapbox"></div>
+   <label>ابحث عن فرع</label><input id="bsrch" placeholder="اكتب اسم الفرع أو المنطقة" autocomplete="off">
+   <div id="blist">${branchItems()}</div></div>`;
   $('#drawer').classList.add('open'); tr($('#drawer'));
 }
+document.addEventListener('input', (e) => { if (e.target.id === 'bsrch') { const l = $('#blist'); if (l) l.innerHTML = branchItems(e.target.value); } });
+
+/* ---------- نسيت كلمة المرور / حذف الحساب ---------- */
+function forgotDrawer() {
+  $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn"><button class="dx" data-act="dclose">×</button><h2>استعادة كلمة المرور</h2><p class="dsub">اكتب رقم موبايلك المسجّل وهنبعت طلب الاستعادة لخدمة العملاء على واتساب، وهنتأكد إن الرقم بتاعك ونساعدك تدخل.</p>
+   <form id="fpf"><label>رقم الموبايل</label><input name="phone" inputmode="tel" placeholder="01XXXXXXXXX" autocomplete="username" required><div class="err" id="fperr"></div><button class="gbtn">إرسال طلب الاستعادة</button></form>
+   <p class="dfoot"><a href="#" class="dl" data-act="login">رجوع لتسجيل الدخول</a></p></div>`;
+  $('#drawer').classList.add('open'); tr($('#drawer'));
+}
+function delDrawer() {
+  const pw = auth.currentUser.providerData.some(p => p.providerId === 'password');
+  $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn"><button class="dx" data-act="dclose">×</button><h2>حذف الحساب نهائيًا</h2><p class="dsub">هيتمسح حسابك وعناوينك ونقاطك وكوبوناتك نهائيًا ومش هتقدر ترجّعهم. طلباتك السابقة بتفضل محفوظة عند المتجر.</p>
+   <form id="delf">${pw ? '<label>اكتب كلمة المرور للتأكيد</label><input name="pass" type="password" autocomplete="current-password" required>' : '<p class="dsub">هنطلب منك تأكيد الدخول بحساب جوجل.</p>'}<div class="err" id="delerr"></div>
+   <button class="gbtn dgr" id="delbtn" style="background:#C0392B;color:#fff">حذف حسابي نهائيًا</button><button type="button" class="gbtn w" style="width:100%;margin-top:12px;border:1px solid var(--navy)" data-act="dclose">إلغاء</button></form></div>`;
+  $('#drawer').classList.add('open'); tr($('#drawer'));
+}
+document.addEventListener('submit', async (e) => {
+  if (e.target.id === 'fpf') {
+    e.preventDefault(); const ph = new FormData(e.target).get('phone').trim(), er = $('#fperr');
+    if (!/^01[0125]\d{8}$/.test(ph)) { er.textContent = lang === 'en' ? T('رقم الموبايل غير صحيح') : 'رقم الموبايل غير صحيح'; return; }
+    let n = String((BRAND.social || {}).wa || (BR.find(b => b.phone) || {}).phone || '').replace(/\D/g, ''); if (n.startsWith('0')) n = '20' + n.slice(1);
+    if (n.length < 10) { er.textContent = 'اتصل بخدمة العملاء على ' + HOT; return; }
+    window.open('https://wa.me/' + n + '?text=' + encodeURIComponent('عايز أستعيد كلمة المرور لحسابي المسجّل برقم ' + ph), '_blank', 'noopener'); ACT.dclose();
+  } else if (e.target.id === 'delf') {
+    e.preventDefault(); const u = auth.currentUser; if (!u) return; const f = Object.fromEntries(new FormData(e.target)), er = (m) => { $('#delerr').textContent = lang === 'en' ? T(m) : m; }; $('#delbtn').disabled = true;
+    try {
+      if (f.pass !== undefined) await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, f.pass));
+      else await u.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+      try { await db.collection('users').doc(u.uid).delete(); } catch (x) { if (x.code === 'permission-denied') throw x; }
+      await u.delete(); ACT.dclose(); toast('تم حذف حسابك نهائيًا'); location.hash = '#/';
+    } catch (x) { const c = x.code || ''; er(/wrong|invalid-credential|invalid-login/.test(c) ? 'كلمة المرور غلط' : c === 'permission-denied' ? 'مفيش صلاحية — لازم تنشر firestore.rules الجديدة في Firebase' : /popup/.test(c) ? 'اتلغى التأكيد' : 'حصلت مشكلة، حاول تاني'); const b = $('#delbtn'); if (b) b.disabled = false; }
+  }
+});
 function menuDrawer() {                               // قائمة الهمبورجر (الأقسام) في الموبايل
   $('#drawer').innerHTML = `<div class="dov" data-act="dclose"></div><div class="dpn mn"><button class="dx" data-act="dclose">×</button><h2>القائمة</h2>
    <a class="mi" href="#/" data-act="dclose">الرئيسية</a><a class="mi" href="#/all" data-act="dclose">المنيو</a>
@@ -582,7 +640,7 @@ document.addEventListener('submit', async (e) => {
       const a = await db.collection('admins').doc(c.user.uid).get();
       if (a.exists) { location.href = 'admin.html'; return; }                          // الأدمن ← لوحة التحكم
     }
-    ACT.dclose(); toast('أهلاً بك ✓');
+    ACT.dclose(); toast(reg ? 'تم إنشاء الحساب بنجاح ✓' : 'تم تسجيل الدخول بنجاح ✓');
     if (afterAuth) { const fn = afterAuth; afterAuth = null; setTimeout(fn, 600); }
   } catch (ex) {
     const c = ex.code || '';
@@ -603,7 +661,7 @@ async function googleLogin() {                         // تسجيل / دخول 
     }
     const a = await db.collection('admins').doc(c.user.uid).get();
     if (a.exists) { location.href = 'admin.html'; return; }
-    ACT.dclose(); toast('أهلاً بك ✓');
+    ACT.dclose(); toast('تم تسجيل الدخول بنجاح ✓');
     if (afterAuth) { const fn = afterAuth; afterAuth = null; setTimeout(fn, 600); }
   } catch (ex) {
     const c = ex.code || '';
@@ -710,6 +768,7 @@ function acMe() {
   const pw = auth.currentUser && auth.currentUser.providerData.some(p => p.providerId === 'password');
   return `<div class="bx"><h3>بياناتي</h3><form id="mef"><div class="fg"><div><label class="f">الاسم</label><input class="in" name="name" value="${esc(user.name || '')}" required></div><div><label class="f">${user.phone ? 'رقم الموبايل' : 'الإيميل'}</label><input class="in" value="${esc(user.phone || user.email)}" disabled dir="ltr"></div></div><div class="err" id="meerr"></div><button class="gbtn" style="margin-top:6px">حفظ</button></form></div>
    ${pw ? `<div class="bx"><h3>تغيير كلمة المرور</h3><form id="pwf"><div class="fg"><div><label class="f">الحالية</label><input class="in" name="cur" type="password" required></div><div><label class="f">الجديدة (6 حروف على الأقل)</label><input class="in" name="nw" type="password" minlength="6" required></div></div><div class="err" id="pwerr"></div><button class="gbtn" style="margin-top:6px">تغيير كلمة المرور</button></form></div>` : ''}
+   <div class="bx"><h3>الحساب</h3><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="gbtn w" style="border:1px solid var(--navy);display:inline-block" data-act="logout">تسجيل خروج</button><button class="gbtn w dgr" style="border:1px solid;display:inline-block" data-act="delacc">حذف الحساب نهائيًا</button></div></div>
    <div class="bx"><h3>اللغة</h3><button class="gbtn w" style="border:1px solid var(--navy);display:inline-block" data-act="lang">${lang === 'ar' ? 'English' : 'العربية'}</button></div>`;
 }
 document.addEventListener('submit', async (e) => {   // فورمات صفحة حسابي
@@ -747,8 +806,43 @@ const ACT = {
   google: googleLogin, login: () => authDrawer('login'), register: () => authDrawer('register'), acct: acctDrawer, branch: branchDrawer,
   dclose: () => $('#drawer').classList.remove('open'),
   eye: (el) => { const i = el.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; },
-  forgot: () => toast('لاستعادة كلمة المرور اتصل بنا على ' + HOT),
-  pick: (el) => { myBranch = el.dataset.id; co.branch = myBranch; localStorage.setItem('hm_branch', myBranch); ACT.dclose(); head(); if (location.hash.startsWith('#/cart')) cartView(); },
+  forgot: forgotDrawer, delacc: () => { if (auth.currentUser) delDrawer(); },
+  bclose: () => { pendingAdd = null; killMap(); ACT.dclose(); },
+  pick: (el) => {
+    myBranch = el.dataset.id; co.branch = myBranch; localStorage.setItem('hm_branch', myBranch); killMap(); ACT.dclose(); head(); if (location.hash.startsWith('#/cart')) cartView();
+    const pa = pendingAdd; pendingAdd = null; if (pa) addToCart(...pa); else toast('تم اختيار فرع ' + branchName());
+  },
+  bgeo: () => {
+    if (!navigator.geolocation) return toast('المتصفح مش بيدعم تحديد الموقع');
+    const b = $('#bgeo'); if (b) b.disabled = true;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude }; if (b) b.disabled = false;
+      const n = nearestTo(userPos);
+      if (!n) { const l = $('#blist'); if (l) l.innerHTML = branchItems($('#bsrch').value); return toast('مواقع الفروع لسه متحددتش — اختار الفرع من القايمة'); }
+      ACT.pick({ dataset: { id: n.b.id } });
+    }, () => { if (b) b.disabled = false; toast('مقدرناش نحدد موقعك — اسمح بالوصول للموقع أو اختار الفرع من القايمة'); }, { enableHighAccuracy: true, timeout: 10000 });
+  },
+  bmap: async () => {
+    const box = $('#bmapbox'); if (!box) return;
+    if (box.dataset.open) { killMap(); box.innerHTML = ''; delete box.dataset.open; return; }
+    box.dataset.open = '1'; box.innerHTML = '<div id="bmap" style="height:300px;border-radius:12px;margin-top:12px"></div><div id="bmsg" class="dsub" style="margin:8px 0 0">اضغط على الخريطة عشان تحدد مكانك</div>';
+    try { await loadLeaflet(); } catch (e) { box.innerHTML = '<div class="err">تعذّر تحميل الخريطة — اختار الفرع من القايمة</div>'; return; }
+    const LF = window.L, pts = BR.map(xy).filter(Boolean), c = userPos || pts[0] || { lat: 30.0444, lng: 31.2357 };
+    mapObj = LF.map('bmap').setView([c.lat, c.lng], 11);
+    LF.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(mapObj);
+    BR.forEach(b => { const p = xy(b); if (p) LF.circleMarker([p.lat, p.lng], { radius: 8, color: '#683898', fillColor: '#683898', fillOpacity: .9 }).addTo(mapObj).bindTooltip(b.name); });
+    if (pts.length > 1) mapObj.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [30, 30] });
+    setTimeout(() => mapObj && mapObj.invalidateSize(), 150);
+    let mk = null;
+    mapObj.on('click', (ev) => {
+      userPos = { lat: ev.latlng.lat, lng: ev.latlng.lng };
+      if (mk) mk.setLatLng(ev.latlng); else mk = LF.circleMarker(ev.latlng, { radius: 9, color: '#C0392B', fillColor: '#C0392B', fillOpacity: .9 }).addTo(mapObj);
+      const n = nearestTo(userPos), m = $('#bmsg');
+      if (!n) { m.textContent = 'مواقع الفروع لسه متحددتش — اختار الفرع من القايمة'; return; }
+      m.innerHTML = `أقرب فرع: <b>${esc(n.b.name)}</b> (${n.d.toFixed(1)} كم) <button class="chip on" data-act="pick" data-id="${esc(n.b.id)}">اختيار</button>`;
+      $('#blist').innerHTML = branchItems($('#bsrch').value);
+    });
+  },
   logout: async () => { await auth.signOut(); ACT.dclose(); toast('تم تسجيل الخروج'); if (location.hash.startsWith('#/track')) route(); },
   lang: () => { lang = lang === 'ar' ? 'en' : 'ar'; localStorage.setItem('hm_lang', lang); applyLang(); },
   soon: () => toast('التطبيق قريبًا'),
@@ -845,7 +939,6 @@ document.addEventListener('click', (e) => {
   if ((el = t.closest('[data-act]'))) { if (el.tagName === 'A' && el.getAttribute('href') === '#') e.preventDefault(); if (ACT[el.dataset.act]) ACT[el.dataset.act](el); return; }
   if ((el = t.closest('[data-go]'))) location.hash = el.dataset.go;
 });
-$('#q') && 0;
 document.addEventListener('input', (e) => { if (e.target.id === 'q') qv = e.target.value; });
 
 /* ======== 10) الترجمة عربي / English ======== */
