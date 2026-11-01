@@ -273,3 +273,11 @@ textarea.in{resize:vertical;font:inherit;line-height:1.5}
   .cpn{flex-wrap:wrap}.cpn .chip{width:100%;text-align:center}
   .ofbox{padding:22px 14px 16px}
 }
+
+/* ---- البانر: الصورة بتظهر كاملة وبنفس مقاس البانر (النسبة بتتحدد من الصورة نفسها) ---- */
+.slider{height:auto!important;aspect-ratio:var(--ar,3/1)}
+.slides{height:100%}
+.slides>div::before{display:none!important}
+.slides img{object-fit:cover!important;object-position:center}
+.dpn .gbtn.w{display:block}
+.dpn .dgr{border-color:#C0392B!important;color:#C0392B!important}
