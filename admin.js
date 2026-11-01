@@ -885,6 +885,9 @@ function branchForm(id) {
     ${field('رقم واتساب استلام الطلبات (01xxxxxxxxx)', `<input name="phone" inputmode="tel" value="${esc(b.phone)}">`)}
     <div class="two"><div>${field('رسوم التوصيل (ج.م)', `<input name="fee" type="number" min="0" value="${b.fee ?? 0}">`)}</div><div>${field('الترتيب', `<input name="order" type="number" value="${b.order ?? S.branches.length}">`)}</div></div>
     <div class="two"><div>${field('بيفتح الساعة (اختياري)', `<input name="open" type="time" value="${esc(b.open)}">`)}</div><div>${field('بيقفل الساعة', `<input name="close" type="time" value="${esc(b.close)}">`)}</div></div>
+    <div class="two"><div>${field('خط العرض (Latitude)', `<input name="lat" inputmode="decimal" dir="ltr" placeholder="30.0444" value="${esc(b.lat ?? '')}">`)}</div><div>${field('خط الطول (Longitude)', `<input name="lng" inputmode="decimal" dir="ltr" placeholder="31.2357" value="${esc(b.lng ?? '')}">`)}</div></div>
+    <button type="button" class="act" onclick="navigator.geolocation&&navigator.geolocation.getCurrentPosition(p=>{this.form.lat.value=p.coords.latitude.toFixed(6);this.form.lng.value=p.coords.longitude.toFixed(6)})">📍 استخدم موقعي الحالي (لو إنت واقف في الفرع)</button>
+    <div class="note">الإحداثيات بتخلّي الموقع يحدد أقرب فرع للعميل. من جوجل ماب: اضغط مطوّلًا على مكان الفرع وانسخ الرقمين.</div>
     <label class="chk"><input type="checkbox" name="active" ${b.active === false ? '' : 'checked'}> الفرع شغال</label><div class="err" id="ferr"></div><button class="btn">حفظ</button></form>`);
 }
 
@@ -994,6 +997,7 @@ Object.assign(ACT, {
 });
 
 /* ---------- مستمعين خاصة (بتشتغل قبل القديمة) ---------- */
+const pc = (v) => (v != null && String(v).trim() !== '' && isFinite(+v)) ? +v : null;
 $('#modal').addEventListener('submit', async (e) => {                 // فورم الفرع والعرض
   const t = e.target.dataset.form; if (t !== 'branch' && t !== 'offer') return;
   e.preventDefault(); e.stopImmediatePropagation();
@@ -1002,7 +1006,7 @@ $('#modal').addEventListener('submit', async (e) => {                 // فور�
   try {
     const c = db.collection(t === 'branch' ? 'branches' : 'offers');
     if (t === 'offer' && f.type !== 'ship' && !(Number(f.value) > 0)) throw new Error('اكتب قيمة الخصم');
-    const data = t === 'branch' ? { name: f.name.trim(), area: (f.area || '').trim(), phone: (f.phone || '').trim(), fee: Number(f.fee) || 0, order: Number(f.order) || 0, open: f.open || '', close: f.close || '', active: !!f.active }
+    const data = t === 'branch' ? { name: f.name.trim(), area: (f.area || '').trim(), phone: (f.phone || '').trim(), fee: Number(f.fee) || 0, order: Number(f.order) || 0, open: f.open || '', close: f.close || '', lat: pc(f.lat), lng: pc(f.lng), active: !!f.active }
       : { title: f.title.trim(), code: f.code.trim().toUpperCase(), type: f.type, value: Number(f.value) || 0, minOrder: Number(f.minOrder) || 0, endsAt: f.endsAt || '', desc: (f.desc || '').trim(), maxUses: Math.max(0, Math.round(Number(f.maxUses) || 0)), hFrom: f.hFrom || '', hTo: f.hTo || '', auto: !!f.auto, perUser: !!f.perUser, firstOrder: !!f.firstOrder, active: !!f.active };
     if (id) await c.doc(id).update(data); else await c.add(t === 'offer' ? { ...data, used: 0, createdAt: TS() } : data);
     touch(); closeModal(); showToast('تم الحفظ ✓');
