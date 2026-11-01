@@ -26,6 +26,8 @@ service cloud.firestore {
     match /users/{uid} {
       allow create: if request.auth != null && request.auth.uid == uid
                     && request.resource.data.keys().hasOnly(['name', 'phone', 'email', 'createdAt', 'refBy', 'addresses', 'favs'])
+                    && request.resource.data.get('name', '') is string && request.resource.data.get('name', '').size() <= 80
+                    && request.resource.data.get('phone', '') is string && request.resource.data.get('phone', '').size() <= 20
                     && (!('refBy' in request.resource.data) || request.resource.data.refBy is string);
       allow read:   if isAdmin() || (request.auth != null && request.auth.uid == uid);
       allow update: if isAdmin() || (request.auth != null && request.auth.uid == uid
@@ -33,7 +35,7 @@ service cloud.firestore {
                     && (!('refCode' in resource.data) || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['refCode']))
                     && request.resource.data.get('addresses', []).size() <= 5
                     && request.resource.data.get('favs', []).size() <= 100);
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || (request.auth != null && request.auth.uid == uid);   // العميل يحذف حسابه بنفسه
     }
 
     // أكواد الدعوة: أي عميل مسجّل يعمل كود لنفسه مرة واحدة، ويتحقق من كود بالاسم (من غير ما يشوف الباقي)
@@ -53,7 +55,9 @@ service cloud.firestore {
     match /orders/{id} {
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid
                     && request.resource.data.status == 'جديدة'
-                    && request.resource.data.total is number && request.resource.data.total >= 0
+                    && request.resource.data.total is number && request.resource.data.total >= 0 && request.resource.data.total <= 1000000
+                    && request.resource.data.items is list && request.resource.data.items.size() >= 1 && request.resource.data.items.size() <= 60
+                    && request.resource.data.get('pointsUsed', 0) >= 0
                     && !request.resource.data.keys().hasAny(['stockDone', 'ptsSpentDone', 'statsDone', 'ptsEarnedN', 'ptsTaken'])
                     && (request.resource.data.get('pointsUsed', 0) == 0
                         || (exists(/databases/$(database)/documents/users/$(request.auth.uid))
