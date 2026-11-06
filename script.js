@@ -122,7 +122,7 @@ let user = null, hasOrders = false, afterAuth = null, qv = '', curCat = '', slid
 let cart = store.get('hm_cart2', []);            // [{id, size, qty}]
 let favs = store.get('hm_favs', []);
 let myBranch = localStorage.getItem('hm_branch') || '';
-let co = { method: 'delivery', name: '', phone: '', gov: 'القاهرة', area: '', addr: '', branch: myBranch, code: '', offer: null, note: '', gift: false, giftMsg: '', when: 'asap', whenAt: '', reward: null };
+let co = { method: 'delivery', name: '', phone: '', gov: 'القاهرة', area: '', addr: '', branch: myBranch, code: '', offer: null, note: '', gift: false, giftMsg: '', when: 'asap', whenAt: '', reward: null, lat: null, lng: null };
 let L = {}, PD = {}, navTok = 0;                              // حالة صفحة القسم وصفحة المنتج
 const branchOf = (id) => BR.find(b => b.id === id);
 const branchName = () => (branchOf(myBranch) || {}).name || '';
@@ -162,6 +162,46 @@ function added() {
   const a = $('.cartlnk');
   if (a) { a.classList.remove('hl'); void a.offsetWidth; a.classList.add('hl'); setTimeout(() => a.classList.remove('hl'), 5000); }
   clearTimeout(addT); addT = setTimeout(hide, 5000);
+}
+
+/* ======== تحديد الموقع التلقائي (GPS + اسم الشارع والمدينة من OpenStreetMap) ======== */
+let geoBusy = false;
+function locateMe(auto) {
+  if (geoBusy) return;
+  if (!navigator.geolocation) { if (!auto) toast('المتصفح مش بيدعم تحديد الموقع'); return; }
+  geoBusy = true; const b = $('#geobtn'); if (b) { b.disabled = true; b.textContent = 'جاري تحديد موقعك...'; }
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    syncForm(); co.lat = +pos.coords.latitude.toFixed(6); co.lng = +pos.coords.longitude.toFixed(6);
+    let found = false;
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=ar&lat=' + co.lat + '&lon=' + co.lng);
+      const a = (await r.json()).address || {};
+      const gov = String(a.state || a.governorate || '').replace(/^محافظة\s*/, '');
+      const area = a.suburb || a.neighbourhood || a.city_district || a.quarter || a.town || a.village || a.city || '';
+      const road = [a.road, a.house_number].filter(Boolean).join(' ');
+      if (gov) co.gov = gov; if (area) co.area = area; if (road) co.addr = road; found = !!(gov || area || road);
+    } catch (e) {}
+    geoBusy = false;
+    if (location.hash.startsWith('#/cart')) cartView();
+    toast(found ? 'تم تحديد موقعك ✓ كمّل رقم العمارة والدور' : 'تم تسجيل موقعك ✓ اكتب العنوان بالتفصيل');
+  }, () => { geoBusy = false; const x = $('#geobtn'); if (x) { x.disabled = false; x.textContent = '📍 حدد موقعي تلقائيًا'; } if (!auto) toast('مقدرناش نحدد موقعك — اسمح بالوصول للموقع أو اكتب العنوان'); }, { enableHighAccuracy: true, timeout: 10000 });
+}
+function autoLoc() {                                 // أول طلب للعميل: نحاول نملا الموقع تلقائيًا (مرة واحدة بس)
+  if (co.method !== 'delivery' || co.area || co.addr || co.lat || hasOrders || !cart.length) return;
+  if ((user && (user.addresses || []).length) || store.get('hm_geo_asked', false)) return;
+  store.set('hm_geo_asked', true); locateMe(true);
+}
+
+/* ======== إشعار الأدمن على الموبايل (ntfy) — بيوصل حتى لو الموقع والمتصفح مقفولين ======== */
+const NTFY_TOPIC = 'helwelmalek-dae2d34abebdb2ef';        // اسم القناة السري — لازم يطابق اللي بتشترك فيه في تطبيق ntfy
+const ADMIN_URL = 'https://hmztzyadtarq-wq.github.io/-8/admin.html';
+function notifyAdmin(o) {
+  if (!NTFY_TOPIC) return;
+  try {
+    const msg = [o.items.map(i => i.name + ' × ' + i.qty).join('\n'), 'الإجمالي: ' + o.total + ' ج.م', 'الاسم: ' + o.name, 'الموبايل: ' + o.phone,
+      'الفرع: ' + o.branchName, o.method === 'pickup' ? 'استلام من الفرع' : 'العنوان: ' + [o.gov, o.area, o.addr].filter(Boolean).join(' - '), o.mapUrl ? 'الموقع: ' + o.mapUrl : '', o.note ? 'ملاحظات: ' + o.note : ''].filter(Boolean).join('\n');
+    fetch('https://ntfy.sh/' + NTFY_TOPIC + '?title=' + encodeURIComponent('🔔 طلب جديد #' + o.orderNo) + '&priority=high&tags=bell&click=' + encodeURIComponent(ADMIN_URL), { method: 'POST', body: msg, keepalive: true }).catch(() => {});
+  } catch (e) {}
 }
 function toggleFav(id) {
   favs = favs.includes(id) ? favs.filter(x => x !== id) : [...favs, id]; store.set('hm_favs', favs);
@@ -460,7 +500,7 @@ async function cartView() {
      <div><label class="f">رقم الموبايل</label><input class="in" id="f-phone" inputmode="tel" placeholder="01xxxxxxxxx" value="${esc(co.phone)}"></div>
      <div class="fl"><label class="f">الفرع الأقرب لك (إجباري)</label><select class="in" id="f-br"><option value="">— اختر الفرع —</option>${BR.map(b => `<option value="${b.id}" ${b.id === co.branch ? 'selected' : ''}>${esc(b.name)}${b.area ? ' — ' + esc(b.area) : ''}</option>`).join('')}</select></div>
      ${bs === false ? `<div class="fl"><div class="warn">الفرع مقفول دلوقتي (بيفتح ${esc(br.open)}) — طلبك هيتجهز أول ما يفتح.</div></div>` : ''}
-     ${pick ? '' : `<div><label class="f">المحافظة</label><input class="in" id="f-gov" value="${esc(co.gov)}"></div><div><label class="f">المنطقة</label><input class="in" id="f-area" placeholder="مثال: مدينة نصر" value="${esc(co.area)}"></div>
+     ${pick ? '' : `<div class="fl"><button type="button" class="gbtn w" id="geobtn" data-act="locme" style="width:100%;border:1px solid var(--navy)">📍 حدد موقعي تلقائيًا</button>${co.lat ? '<div class="note" style="color:var(--ok)">✓ تم تسجيل موقعك على الخريطة — راجع العنوان وكمّل رقم العمارة والدور</div>' : ''}</div><div><label class="f">المحافظة</label><input class="in" id="f-gov" value="${esc(co.gov)}"></div><div><label class="f">المنطقة</label><input class="in" id="f-area" placeholder="مثال: مدينة نصر" value="${esc(co.area)}"></div>
      <div class="fl"><label class="f">العنوان بالتفصيل</label><input class="in" id="f-addr" placeholder="شارع، رقم العمارة، الدور، الشقة" value="${esc(co.addr)}"></div>`}
 </div></div>
    <div class="bx"><h3>تفاصيل إضافية</h3><div class="fg">
@@ -484,6 +524,7 @@ async function cartView() {
    ${earn > 0 ? `<div class="erp">${I.crown}<span>هتكسب ${earn} نقطة بعد تسليم الطلب</span></div>` : (!user && LOYON() ? `<div class="erp">${I.crown}<span>سجّل دخولك واكسب نقاط على طلبك</span></div>` : '')}
    <div class="err" id="cerr"></div>
    <button class="gbtn" style="width:100%;margin-top:6px" data-act="confirm">تأكيد الطلب</button><div class="sec">بياناتك محمية ومدفوعاتك آمنة</div></aside></div></div>`, true);
+  autoLoc();
 }
 async function confirmOrder() {
   syncForm(); const err = (m) => { const e = $('#cerr'); if (e) e.textContent = lang === 'en' ? T(m) : m; };
@@ -512,9 +553,11 @@ async function confirmOrder() {
     rewardId: rw ? rw.id : '', rewardName: rw ? rw.name : '', rewardType: rw ? rw.type : '', rewardDisc: P.rd, pointsUsed: rw ? +rw.pts : 0,
     fee: P.fee, total: P.total, pay: 'cash', note: (co.note || '').trim(), gift: !!co.gift, giftMsg: co.gift ? (co.giftMsg || '').trim() : '', when: co.when === 'later' ? co.whenAt : '',
     status: 'جديدة', orderNo, createdAt: TS() };
+  if (!pick && co.lat) { order.lat = co.lat; order.lng = co.lng; order.mapUrl = 'https://www.google.com/maps?q=' + co.lat + ',' + co.lng; }
   try { await db.collection('orders').add(order); } catch (e) { unlock(); return err('تعذّر إرسال الطلب، حاول تاني'); }
+  notifyAdmin(order);
   if (rw) user.pend = (+user.pend || 0) + (+rw.pts || 0);
-  MYORD = null; cart = []; co.offer = null; co.code = ''; co.reward = null; co.note = ''; co.gift = false; co.giftMsg = ''; co.when = 'asap'; co.whenAt = ''; saveCart(); hasOrders = true; head();
+  MYORD = null; cart = []; co.offer = null; co.code = ''; co.reward = null; co.note = ''; co.gift = false; co.giftMsg = ''; co.when = 'asap'; co.whenAt = ''; co.lat = co.lng = null; saveCart(); hasOrders = true; head();
   const msg = `طلب جديد #${orderNo}%0A${order.items.map(i => `${i.name} × ${i.qty}`).join('%0A')}%0Aالإجمالي: ${order.total} ج.م%0Aالاسم: ${order.name}%0Aالموبايل: ${order.phone}${pick ? '%0Aاستلام من الفرع' : '%0Aالعنوان: ' + order.area + ' - ' + order.addr}${order.when ? '%0Aالميعاد: ' + order.when.replace('T', ' ') : ''}${order.note ? '%0Aملاحظات: ' + order.note : ''}${order.gift ? '%0Aهدية 🎁: ' + (order.giftMsg || 'بدون رسالة') : ''}${order.rewardName ? '%0Aمكافأة: ' + order.rewardName : ''}`;
   let wa = String(br.phone || '').replace(/\D/g, ''); if (wa.startsWith('0')) wa = '20' + wa.slice(1);
   const pts = earnFor(P.after);
@@ -825,6 +868,7 @@ const ACT = {
   dclose: () => $('#drawer').classList.remove('open'),
   eye: (el) => { const i = el.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; },
   forgot: forgotDrawer, delacc: () => { if (auth.currentUser) delDrawer(); },
+  locme: () => locateMe(false),
   bclose: () => { pendingAdd = null; killMap(); ACT.dclose(); },
   pick: (el) => {
     myBranch = el.dataset.id; co.branch = myBranch; localStorage.setItem('hm_branch', myBranch); killMap(); ACT.dclose(); head(); if (location.hash.startsWith('#/cart')) cartView();
@@ -930,7 +974,7 @@ Object.assign(ACT, {
   share: () => { const p = byId(PD.id), u = location.href; if (navigator.share) navigator.share({ title: p ? p.name : 'حلو الملك', url: u }).catch(() => {}); else if (navigator.clipboard) navigator.clipboard.writeText(u).then(() => toast('تم نسخ اللينك ✓')).catch(() => toast(u)); else toast(u); },
   when: (el) => { syncForm(); co.when = el.dataset.v; cartView(); },
   giftt: () => { syncForm(); cartView(); },
-  useaddr: (el) => { syncForm(); const a = (user.addresses || [])[+el.dataset.i]; if (a) { co.gov = a.gov || co.gov; co.area = a.area || ''; co.addr = a.addr || ''; } cartView(); },
+  useaddr: (el) => { syncForm(); const a = (user.addresses || [])[+el.dataset.i]; if (a) { co.gov = a.gov || co.gov; co.area = a.area || ''; co.addr = a.addr || ''; co.lat = co.lng = null; } cartView(); },
   rwon: (el) => { syncForm(); const r = (LOY.rewards || [])[+el.dataset.i]; if (r && avail() >= r.pts) co.reward = r; cartView(); },
   rwoff: () => { syncForm(); co.reward = null; cartView(); },
   moreord: () => { AC.n += 10; acOrders().then(setAcb); },
@@ -1017,6 +1061,7 @@ RULES.unshift(
 CATS.forEach(c => { if (c.en) D[c.name] = c.en; (c.subs || []).forEach((s, i) => { if (c.subsEn && c.subsEn[i]) D[s] = c.subsEn[i]; }); });
 RULES.push([/^(\d+) منتج في سلتك$/, '$1 items in your cart']);
 Object.assign(D, { 'تمت الإضافة للسلة': 'Added to cart', 'إتمام الشراء الآن': 'Checkout now', 'تابع التسوق': 'Continue shopping' });
+Object.assign(D, { '📍 حدد موقعي تلقائيًا': '📍 Locate me automatically', 'جاري تحديد موقعك...': 'Locating you...', 'تم تحديد موقعك ✓ كمّل رقم العمارة والدور': 'Location set ✓ add building and floor', 'تم تسجيل موقعك ✓ اكتب العنوان بالتفصيل': 'Location saved ✓ add the full address', 'تم تسجيل موقعك على الخريطة — راجع العنوان وكمّل رقم العمارة والدور': 'Location saved — check the address and add building and floor' });
 function T(t) { if (D[t] !== undefined) return D[t]; if (PEN[t]) return PEN[t]; for (const [re, to] of RULES) if (re.test(t)) return t.replace(re, to); return t; }
 function tr(root) {                                  // بيترجم النصوص لو اللغة إنجليزي (الرسم دايمًا بيبدأ عربي)
   if (lang !== 'en' || !root) return;
