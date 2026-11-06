@@ -281,3 +281,16 @@ textarea.in{resize:vertical;font:inherit;line-height:1.5}
 .slides img{object-fit:cover!important;object-position:center}
 .dpn .gbtn.w{display:block}
 .dpn .dgr{border-color:#C0392B!important;color:#C0392B!important}
+
+/* ---- رسالة الإضافة للسلة + هاي لايت السلة ---- */
+#addtoast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,30px);width:min(92vw,380px);background:#fff;color:var(--text);border:2px solid var(--pur);border-radius:16px;padding:16px 18px;box-shadow:0 12px 36px rgba(75,46,131,.35);opacity:0;pointer-events:none;transition:.3s;z-index:100;text-align:center}
+#addtoast.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+#addtoast .at-t{font-size:18px;font-weight:800;color:var(--pur2)}
+#addtoast .at-ok{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ok);color:#fff;font-size:14px;margin-inline-end:6px}
+#addtoast .at-n{margin:6px 0 12px;font-size:14px;color:var(--mut)}
+#addtoast .at-b{display:flex;gap:8px}
+#addtoast .at-go{flex:1.4;background:var(--pur);color:#fff;border-radius:12px;padding:11px 8px;font-weight:800;font-size:15px;text-decoration:none}
+#addtoast .at-more{flex:1;background:var(--lav);color:var(--pur2);border:0;border-radius:12px;padding:11px 8px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.act.cartlnk.hl{background:var(--pur);color:#fff;border-radius:12px;animation:cartpulse .6s ease-in-out 3}
+.act.cartlnk.hl span{font-weight:800}
+@keyframes cartpulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(124,196,236,.9)}50%{transform:scale(1.12);box-shadow:0 0 0 10px rgba(124,196,236,0)}}
