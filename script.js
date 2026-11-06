@@ -143,7 +143,25 @@ function addToCart(id, size = '', n = 1) {
   const c = cart.find(x => x.id === id && x.size === size);
   if (p.stock != null && (c ? c.qty : 0) + n > p.stock) return toast('الكمية المتاحة ' + p.stock + ' فقط');
   c ? c.qty += n : cart.push({ id, size, qty: n });
-  saveCart(); toast('تمت الإضافة للسلة ✓');
+  saveCart(); added();
+}
+
+/* رسالة "تمت الإضافة للسلة" + زرار إتمام الشراء + هاي لايت لأيقونة السلة في الهيدر */
+let addT;
+function added() {
+  let t = $('#addtoast');
+  if (!t) { t = document.createElement('div'); t.id = 'addtoast'; document.body.appendChild(t); }
+  t.innerHTML = `<div class="at-t"><span class="at-ok">✓</span> تمت الإضافة للسلة</div>
+    <div class="at-n">${cartCount()} منتج في سلتك</div>
+    <div class="at-b"><a class="at-go" href="#/cart">إتمام الشراء الآن</a><button type="button" class="at-more">تابع التسوق</button></div>`;
+  tr(t);
+  const hide = () => t.classList.remove('show');
+  t.querySelector('.at-go').onclick = hide;
+  t.querySelector('.at-more').onclick = hide;
+  t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+  const a = $('.cartlnk');
+  if (a) { a.classList.remove('hl'); void a.offsetWidth; a.classList.add('hl'); setTimeout(() => a.classList.remove('hl'), 5000); }
+  clearTimeout(addT); addT = setTimeout(hide, 5000);
 }
 function toggleFav(id) {
   favs = favs.includes(id) ? favs.filter(x => x !== id) : [...favs, id]; store.set('hm_favs', favs);
@@ -170,7 +188,7 @@ function head() {
              : `<a class="act" href="#" data-act="login">${I.userC}<span>تسجيل الدخول</span></a><a class="act" href="#" data-act="register"><span>إنشاء حساب</span></a>`}
       ${hasOrders ? `<a class="act" href="#/track"><span>تتبع الطلب</span></a>` : ''}
       <a class="act" href="#" data-act="notifs">${I.bellC}<span>العروض</span>${unseenN() ? `<i class="nb">${unseenN()}</i>` : ''}</a>
-      <a class="act" href="#/cart">${I.basketC}<span>${cartCount()} منتج</span></a>
+      <a class="act cartlnk" href="#/cart">${I.basketC}<span>${cartCount()} منتج</span></a>
       <a class="act" href="#" data-act="branch">${I.pinC}<span>${esc(branchName() || 'اختر الفرع')}</span><em>تغيير</em></a>
       <a class="act" href="#" data-act="lang">${lang === 'ar' ? I.flagUS : I.flagEG}<span>${lang === 'ar' ? 'English' : 'العربية'}</span></a>
     </div></div>
@@ -997,6 +1015,8 @@ RULES.unshift(
   [/^«(.+)» المتاح منه (\d+) فقط$/, '«$1» only $2 available'], [/^حصلت مشكلة \((.*)\)، حاول تاني$/, 'Something went wrong ($1), try again'], [/^طلب #(\d+)$/, 'Order #$1']
 );
 CATS.forEach(c => { if (c.en) D[c.name] = c.en; (c.subs || []).forEach((s, i) => { if (c.subsEn && c.subsEn[i]) D[s] = c.subsEn[i]; }); });
+RULES.push([/^(\d+) منتج في سلتك$/, '$1 items in your cart']);
+Object.assign(D, { 'تمت الإضافة للسلة': 'Added to cart', 'إتمام الشراء الآن': 'Checkout now', 'تابع التسوق': 'Continue shopping' });
 function T(t) { if (D[t] !== undefined) return D[t]; if (PEN[t]) return PEN[t]; for (const [re, to] of RULES) if (re.test(t)) return t.replace(re, to); return t; }
 function tr(root) {                                  // بيترجم النصوص لو اللغة إنجليزي (الرسم دايمًا بيبدأ عربي)
   if (lang !== 'en' || !root) return;
