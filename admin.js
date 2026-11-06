@@ -623,6 +623,7 @@ function orderModal(id) {
     <div class="li"><span>النوع</span><span>${o.method === 'pickup' ? 'استلام من الفرع' : 'توصيل'}</span></div>
     ${orderExtra(o)}
     ${o.method === 'pickup' ? '' : `<div class="li"><span>العنوان</span><span style="white-space:normal;text-align:left">${esc((o.gov || '') + ' - ' + (o.area || '') + ' - ' + (o.addr || ''))}</span></div>`}
+    ${o.mapUrl ? `<div class="li"><span>الموقع</span><a href="${esc(o.mapUrl)}" target="_blank" rel="noopener" style="color:var(--gold);font-weight:700">📍 افتح على الخريطة</a></div>` : ''}
     <h3 style="margin:14px 0 4px">المنتجات</h3>
     ${(o.items || []).map(i => `<div class="li"><span>${esc(i.name)} × ${i.qty}</span><span>${fmt(i.price * i.qty)} ج.م</span></div>`).join('')}
     ${o.discount ? `<div class="li"><span>خصم ${esc(o.discLabel || o.code || '')}${o.rewardDisc ? ' + مكافأة نقاط' : ''}</span><span>- ${fmt(o.discount)} ج.م</span></div>` : ''}
