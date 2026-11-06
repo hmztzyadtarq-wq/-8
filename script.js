@@ -558,11 +558,26 @@ async function confirmOrder() {
   notifyAdmin(order);
   if (rw) user.pend = (+user.pend || 0) + (+rw.pts || 0);
   MYORD = null; cart = []; co.offer = null; co.code = ''; co.reward = null; co.note = ''; co.gift = false; co.giftMsg = ''; co.when = 'asap'; co.whenAt = ''; co.lat = co.lng = null; saveCart(); hasOrders = true; head();
-  const msg = `طلب جديد #${orderNo}%0A${order.items.map(i => `${i.name} × ${i.qty}`).join('%0A')}%0Aالإجمالي: ${order.total} ج.م%0Aالاسم: ${order.name}%0Aالموبايل: ${order.phone}${pick ? '%0Aاستلام من الفرع' : '%0Aالعنوان: ' + order.area + ' - ' + order.addr}${order.when ? '%0Aالميعاد: ' + order.when.replace('T', ' ') : ''}${order.note ? '%0Aملاحظات: ' + order.note : ''}${order.gift ? '%0Aهدية 🎁: ' + (order.giftMsg || 'بدون رسالة') : ''}${order.rewardName ? '%0Aمكافأة: ' + order.rewardName : ''}`;
+  const money = (n) => fmt(n) + ' ج.م';
+  const msg = [
+    '🛍️ طلب جديد رقم #' + orderNo, ' ',
+    '📦 الأصناف:', ...order.items.map(i => '• ' + i.name + (i.size ? ' (' + i.size + ')' : '') + ' × ' + i.qty + ' = ' + money(i.price * i.qty)), ' ',
+    '💰 المجموع: ' + money(order.subtotal),
+    order.discount > 0 ? '🏷️ الخصم: -' + money(order.discount) + (order.discLabel ? ' (' + order.discLabel + ')' : '') : '',
+    !pick ? '🚚 التوصيل: ' + (order.fee > 0 ? money(order.fee) : 'مجاني') : '',
+    '✅ الإجمالي: ' + money(order.total), '💵 الدفع: كاش عند الاستلام', ' ',
+    '👤 الاسم: ' + order.name, '📞 الموبايل: ' + order.phone, '🏪 الفرع: ' + br.name,
+    pick ? '🛵 الاستلام: من الفرع' : '📍 العنوان: ' + [order.gov, order.area, order.addr].filter(Boolean).join(' - '),
+    order.mapUrl ? '🗺️ الموقع على الخريطة: ' + order.mapUrl : '',
+    order.when ? '⏰ الميعاد: ' + order.when.replace('T', ' ') : '',
+    order.note ? '📝 ملاحظات: ' + order.note : '',
+    order.gift ? '🎁 هدية: ' + (order.giftMsg || 'بدون رسالة') : '',
+    order.rewardName ? '⭐ مكافأة: ' + order.rewardName : ''
+  ].filter(x => x !== '').join('\n');
   let wa = String(br.phone || '').replace(/\D/g, ''); if (wa.startsWith('0')) wa = '20' + wa.slice(1);
   const pts = earnFor(P.after);
   render(`<div class="wrap empty"><h2>تم استلام طلبك ✓</h2><p>رقم الطلب #${orderNo} — فرع ${esc(br.name)}</p><p>هنتواصل معاك على ${esc(order.phone)}</p>${pts > 0 ? `<p class="erp" style="justify-content:center">${I.crown}<span>هتكسب ${pts} نقطة بعد تسليم الطلب</span></p>` : ''}
-   <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap"><a class="gbtn" href="#/track">تتبع طلبك</a>${notifItems().some(o => !o.auto) ? `<button class="gbtn w" style="border:1px solid var(--navy)" data-act="notifs">شوف العروض المتاحة</button>` : ''}${wa ? `<a class="gbtn w" style="border:1px solid var(--navy)" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${esc(msg)}">ابعت تفاصيل الطلب للفرع (واتساب)</a>` : ''}</div></div>`);
+   <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap"><a class="gbtn" href="#/track">تتبع طلبك</a>${notifItems().some(o => !o.auto) ? `<button class="gbtn w" style="border:1px solid var(--navy)" data-act="notifs">شوف العروض المتاحة</button>` : ''}${wa ? `<a class="gbtn w" style="border:1px solid var(--navy)" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${esc(enc(msg))}">ابعت تفاصيل الطلب للفرع (واتساب)</a>` : ''}</div></div>`);
 }
 
 /* ---------- تتبع الطلب (لحظي) ---------- */
