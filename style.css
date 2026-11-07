@@ -294,3 +294,29 @@ textarea.in{resize:vertical;font:inherit;line-height:1.5}
 .act.cartlnk.hl{background:var(--pur);color:#fff;border-radius:12px;animation:cartpulse .6s ease-in-out 3}
 .act.cartlnk.hl span{font-weight:800}
 @keyframes cartpulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(124,196,236,.9)}50%{transform:scale(1.12);box-shadow:0 0 0 10px rgba(124,196,236,0)}}
+
+/* ---- الفوتر: أقصر + أيقونات تواصل ملونة + شريط المطوّر ---- */
+footer{padding-top:24px}
+.fgrid{grid-template-columns:1.6fr 1fr 1fr;gap:22px}
+.fgrid h4{font-size:16px;margin-bottom:6px}
+.fgrid a{padding:3px 0}
+.fb p{margin-top:8px;font-size:14px;line-height:1.6}
+.fb .logo img,.fb .logo svg{max-height:48px}
+.apps{margin-top:2px}.apps a{padding:7px 14px;font-size:14px}
+.soc{display:flex;gap:12px;margin-top:12px}
+.fgrid .soc a{display:grid;place-items:center;width:46px;height:46px;padding:0;border-radius:50%;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.22);transition:transform .2s,box-shadow .2s}
+.fgrid .soc a:hover{transform:translateY(-4px) scale(1.08);box-shadow:0 8px 18px rgba(0,0,0,.3);color:#fff}
+.soc svg{width:25px;height:25px;color:#fff;stroke-width:2}
+.soc .s-fb{background:#1877F2}
+.soc .s-ig{background:radial-gradient(circle at 30% 107%,#fdf497 0,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)}
+.soc .s-tt{background:#111}
+.soc .s-wa{background:#25D366}
+.fcopy{margin-top:16px;padding-top:12px;padding-bottom:12px;font-size:13px}
+.devbar{background:var(--navy);color:#fff;padding:12px 0;border-top:3px solid var(--pur)}
+.dev{display:flex;align-items:center;justify-content:center;gap:10px 18px;flex-wrap:wrap;text-align:center;font-size:14px}
+.dev-t b{font-family:Georgia,'Times New Roman',serif;font-size:17px;letter-spacing:.5px;color:#fff;border-bottom:2px solid var(--blue)}
+.dev-s{opacity:.85}
+.dev-b{display:inline-flex;align-items:center;gap:8px;background:#25D366;color:#fff;border-radius:999px;padding:7px 16px;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 3px 10px rgba(0,0,0,.25);transition:transform .2s}
+.dev-b:hover{transform:translateY(-2px)}
+.dev-b svg{width:20px;height:20px;color:#fff;stroke-width:2}
+@media(max-width:1000px){.fgrid{grid-template-columns:1fr 1fr;gap:14px}.fgrid .fb{grid-column:1/-1}.fcopy{flex-direction:column;gap:4px;text-align:center}}
