@@ -198,8 +198,7 @@ const ADMIN_URL = 'https://hmztzyadtarq-wq.github.io/-8/admin.html';
 function notifyAdmin(o) {
   if (!NTFY_TOPIC) return;
   try {
-    const msg = [o.items.map(i => i.name + ' × ' + i.qty).join('\n'), 'الإجمالي: ' + o.total + ' ج.م', 'الاسم: ' + o.name, 'الموبايل: ' + o.phone,
-      'الفرع: ' + o.branchName, o.method === 'pickup' ? 'استلام من الفرع' : 'العنوان: ' + [o.gov, o.area, o.addr].filter(Boolean).join(' - '), o.mapUrl ? 'الموقع: ' + o.mapUrl : '', o.note ? 'ملاحظات: ' + o.note : ''].filter(Boolean).join('\n');
+    const msg = [o.items.length + ' صنف — الإجمالي: ' + o.total + ' ج.م', 'الفرع: ' + o.branchName, o.method === 'pickup' ? 'استلام من الفرع' : 'توصيل', 'افتح لوحة التحكم لعرض التفاصيل'].join('\n');   // من غير بيانات العميل (القناة مش خاصة)
     fetch('https://ntfy.sh/' + NTFY_TOPIC + '?title=' + encodeURIComponent('🔔 طلب جديد #' + o.orderNo) + '&priority=high&tags=bell&click=' + encodeURIComponent(ADMIN_URL), { method: 'POST', body: msg, keepalive: true }).catch(() => {});
   } catch (e) {}
 }
@@ -237,14 +236,15 @@ function head() {
   tr($('#top'));
 }
 function foot() {
-  const so = BRAND.social || {}, ico = [['fb', 'fb'], ['ig', 'ig'], ['tt', 'tt'], ['wa', 'wa']];
+  const so = BRAND.social || {}, ico = [['fb', 'fb', 'Facebook'], ['ig', 'ig', 'Instagram'], ['tt', 'tt', 'TikTok'], ['wa', 'wa', 'WhatsApp']];
+  const DEV_WA = 'https://wa.me/201140090339?text=' + encodeURIComponent('مرحبًا طارق، شفت موقع حلو الملك وعايز أعمل موقع لمشروعي');
   $('#foot').innerHTML = `<div class="wrap fgrid">
-    <div class="fb"><a class="logo" href="#/">${logoHtml()}</a><p>أجود الحلويات الشرقية والغربية والمخبوزات، بمكونات طازة وتوصيل لحد باب بيتك.</p></div>
-    <div><h4>روابط سريعة</h4><a href="#/">الرئيسية</a><a href="#/all">المنيو</a><a href="#/offers">العروض</a><a href="#/branches">فروعنا</a><a href="#/account">حسابي</a></div>
+    <div class="fb"><a class="logo" href="#/">${logoHtml()}</a><p>أجود الحلويات الشرقية والغربية والمخبوزات، بمكونات طازة وتوصيل لحد باب بيتك.</p>
+      <div class="soc">${ico.filter(([k]) => so[k]).map(([k, i, n]) => `<a class="s-${k}" aria-label="${n}" href="${esc(k === 'wa' ? 'https://wa.me/' + String(so[k]).replace(/\D/g, '') : so[k])}" target="_blank" rel="noopener">${I[i]}</a>`).join('')}</div></div>
     <div><h4>خدمة العملاء</h4><a href="#/track">تتبع الطلب</a><a href="#/pg/refund">سياسة الاسترجاع</a><a href="#/pg/faq">الأسئلة الشائعة</a><a href="#/pg/contact">اتصل بنا</a></div>
-    <div><h4>حمّل التطبيق</h4><div class="apps"><a href="#" data-act="soon">Google Play</a><a href="#" data-act="soon">App Store</a></div>
-      <div class="soc">${ico.filter(([k]) => so[k]).map(([k, i]) => `<a href="${esc(k === 'wa' ? 'https://wa.me/' + String(so[k]).replace(/\D/g, '') : so[k])}" target="_blank" rel="noopener">${I[i]}</a>`).join('')}</div></div>
-  </div><div class="wrap fcopy"><span>جميع الحقوق محفوظة لدى حلو الملك 2026</span><span>الخط الساخن: ${esc(HOT)}</span></div>`;
+    <div><h4>حمّل التطبيق</h4><div class="apps"><a href="#" data-act="soon">Google Play</a><a href="#" data-act="soon">App Store</a></div></div>
+  </div><div class="wrap fcopy"><span>جميع الحقوق محفوظة لدى حلو الملك 2026</span><span>الخط الساخن: ${esc(HOT)}</span></div>
+  <div class="devbar"><div class="wrap dev"><span class="dev-t">تصميم وتطوير <b dir="ltr">Tarek Wael</b></span><span class="dev-s">هل تريد موقعًا إلكترونيًا احترافيًا لمشروعك؟</span><a class="dev-b" href="${DEV_WA}" target="_blank" rel="noopener">${I.wa}<span>تواصل عبر واتساب</span></a></div></div>`;
   tr($('#foot'));
 }
 
@@ -1077,6 +1077,7 @@ CATS.forEach(c => { if (c.en) D[c.name] = c.en; (c.subs || []).forEach((s, i) =>
 RULES.push([/^(\d+) منتج في سلتك$/, '$1 items in your cart']);
 Object.assign(D, { 'تمت الإضافة للسلة': 'Added to cart', 'إتمام الشراء الآن': 'Checkout now', 'تابع التسوق': 'Continue shopping' });
 Object.assign(D, { '📍 حدد موقعي تلقائيًا': '📍 Locate me automatically', 'جاري تحديد موقعك...': 'Locating you...', 'تم تحديد موقعك ✓ كمّل رقم العمارة والدور': 'Location set ✓ add building and floor', 'تم تسجيل موقعك ✓ اكتب العنوان بالتفصيل': 'Location saved ✓ add the full address', 'تم تسجيل موقعك على الخريطة — راجع العنوان وكمّل رقم العمارة والدور': 'Location saved — check the address and add building and floor' });
+Object.assign(D, { 'تصميم وتطوير': 'Designed & developed by', 'هل تريد موقعًا إلكترونيًا احترافيًا لمشروعك؟': 'Want a professional website for your business?', 'تواصل عبر واتساب': 'Chat on WhatsApp' });
 function T(t) { if (D[t] !== undefined) return D[t]; if (PEN[t]) return PEN[t]; for (const [re, to] of RULES) if (re.test(t)) return t.replace(re, to); return t; }
 function tr(root) {                                  // بيترجم النصوص لو اللغة إنجليزي (الرسم دايمًا بيبدأ عربي)
   if (lang !== 'en' || !root) return;
