@@ -265,7 +265,7 @@ function orderModal(id) {
     <div class="li"><span>العنوان</span><span style="white-space:normal;text-align:left">${esc(o.addr)}</span></div>
     ${o.note ? `<div class="li"><span>ملاحظات</span><span>${esc(o.note)}</span></div>` : ''}
     <h3 style="margin:14px 0 4px">المنتجات</h3>
-    ${(o.items || []).map(i => `<div class="li"><span>${esc(i.name)} × ${i.qty}</span><span>${fmt(i.price * i.qty)} ج.م</span></div>`).join('')}
+    ${(o.items || []).map(i => `<div class="li"><span>${esc(i.name)} × ${i.qty}${i.note ? `<br><small style="color:var(--gold);white-space:normal">📝 ${esc(i.note)}</small>` : ''}</span><span>${fmt(i.price * i.qty)} ج.م</span></div>`).join('')}
     <div class="li"><b>الإجمالي</b><b>${fmt(o.total)} ج.م</b></div>`);
 }
 
@@ -623,9 +623,9 @@ function orderModal(id) {
     <div class="li"><span>النوع</span><span>${o.method === 'pickup' ? 'استلام من الفرع' : 'توصيل'}</span></div>
     ${orderExtra(o)}
     ${o.method === 'pickup' ? '' : `<div class="li"><span>العنوان</span><span style="white-space:normal;text-align:left">${esc((o.gov || '') + ' - ' + (o.area || '') + ' - ' + (o.addr || ''))}</span></div>`}
-    ${o.mapUrl ? `<div class="li"><span>الموقع</span><a href="${esc(o.mapUrl)}" target="_blank" rel="noopener" style="color:var(--gold);font-weight:700">📍 افتح على الخريطة</a></div>` : ''}
+    ${(Number.isFinite(+o.lat) && Number.isFinite(+o.lng) && o.lat != null) ? `<div class="li"><span>الموقع</span><a href="https://www.google.com/maps?q=${+o.lat},${+o.lng}" target="_blank" rel="noopener" style="color:var(--gold);font-weight:700">📍 افتح على الخريطة</a></div>` : ''}
     <h3 style="margin:14px 0 4px">المنتجات</h3>
-    ${(o.items || []).map(i => `<div class="li"><span>${esc(i.name)} × ${i.qty}</span><span>${fmt(i.price * i.qty)} ج.م</span></div>`).join('')}
+    ${(o.items || []).map(i => `<div class="li"><span>${esc(i.name)} × ${i.qty}${i.note ? `<br><small style="color:var(--gold);white-space:normal">📝 ${esc(i.note)}</small>` : ''}</span><span>${fmt(i.price * i.qty)} ج.م</span></div>`).join('')}
     ${o.discount ? `<div class="li"><span>خصم ${esc(o.discLabel || o.code || '')}${o.rewardDisc ? ' + مكافأة نقاط' : ''}</span><span>- ${fmt(o.discount)} ج.م</span></div>` : ''}
     ${o.fee ? `<div class="li"><span>رسوم التوصيل</span><span>${fmt(o.fee)} ج.م</span></div>` : ''}
     <div class="li"><b>الإجمالي (كاش)</b><b>${fmt(o.total)} ج.م</b></div>`);
