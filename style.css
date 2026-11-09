@@ -320,3 +320,9 @@ footer{padding-top:24px}
 .dev-b:hover{transform:translateY(-2px)}
 .dev-b svg{width:20px;height:20px;color:#fff;stroke-width:2}
 @media(max-width:1000px){.fgrid{grid-template-columns:1fr 1fr;gap:14px}.fgrid .fb{grid-column:1/-1}.fcopy{flex-direction:column;gap:4px;text-align:center}}
+
+/* ---- ملاحظة على كل منتج في السلة ---- */
+.nadd{display:block;margin-top:6px;padding:0;font:inherit;font-size:13px;font-weight:600;color:var(--pur);background:none;border:0;cursor:pointer}
+.nadd:hover{text-decoration:underline}
+.inote{display:block;width:100%;max-width:320px;margin-top:6px;padding:7px 10px;font:inherit;font-size:13px;color:var(--text);background:#fff;border:1px solid var(--line);border-radius:10px;outline:0}
+.inote:focus{border-color:var(--pur)}
