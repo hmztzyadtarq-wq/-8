@@ -202,6 +202,7 @@ function notifyAdmin(o) {
     fetch('https://ntfy.sh/' + NTFY_TOPIC + '?title=' + encodeURIComponent('🔔 طلب جديد #' + o.orderNo) + '&priority=high&tags=bell&click=' + encodeURIComponent(ADMIN_URL), { method: 'POST', body: msg, keepalive: true }).catch(() => {});
   } catch (e) {}
 }
+document.addEventListener('input', (e) => { const t = e.target; if (t.classList && t.classList.contains('inote')) { const c = cart[+t.dataset.i]; if (c) { c.note = t.value.slice(0, 150); store.set('hm_cart2', cart); } } });
 function toggleFav(id) {
   favs = favs.includes(id) ? favs.filter(x => x !== id) : [...favs, id]; store.set('hm_favs', favs);
   if (user) { clearTimeout(toggleFav.t); toggleFav.t = setTimeout(() => db.collection('users').doc(user.uid).set({ favs: favs.slice(0, 100) }, { merge: true }).catch(() => {}), 800); }
@@ -489,7 +490,7 @@ async function cartView() {
   <div class="cl"><div>
    <div class="bx"><button class="bt" data-act="cclear">إفراغ السلة</button><h3>سلة المشتريات (${ls.length})</h3>
     ${ls.map((l, i) => `<div class="ln"><div class="lt">${l.p.img ? `<img src="${esc(cld(l.p.img, 200))}" alt="">` : I[catIco(l.p.cat)]}</div>
-     <div class="li"><b>${esc(l.p.name)}</b><small>${esc(l.size || l.p.unit || '')}</small><div>${fmt(l.price)} ج.م</div></div>
+     <div class="li"><b>${esc(l.p.name)}</b><small>${esc(l.size || l.p.unit || '')}</small><div>${fmt(l.price)} ج.م</div>${l.note !== undefined ? `<input class="inote" data-i="${i}" maxlength="150" value="${esc(l.note)}" placeholder="ملاحظة على المنتج (اختياري)">` : `<button type="button" class="nadd" data-act="cnote" data-i="${i}">✎ أضف ملاحظة</button>`}</div>
      <div class="qty"><button data-act="cq" data-i="${i}" data-d="1">+</button><b>${l.qty}</b><button data-act="cq" data-i="${i}" data-d="-1">−</button></div>
      <div class="lp">${fmt(l.price * l.qty)} ج.م</div><button class="rm" data-act="cdel" data-i="${i}" aria-label="remove">${I.trash}</button></div>`).join('')}</div>
    <div class="bx"><h3>بيانات التوصيل</h3>
@@ -548,7 +549,7 @@ async function confirmOrder() {
   const rw = co.reward, orderNo = 1000 + Math.floor(Date.now() / 1000) % 1000000;
   const order = { uid: user.uid, name: co.name.trim(), phone: co.phone.trim(), method: co.method, branchId: br.id, branchName: br.name,
     gov: pick ? '' : co.gov, area: pick ? '' : co.area.trim(), addr: pick ? '' : co.addr.trim(),
-    items: ls.map(l => ({ id: l.id, size: l.size, name: l.name, cat: l.p.cat, price: l.price, qty: l.qty })),
+    items: ls.map(l => ({ id: l.id, size: l.size, name: l.name, cat: l.p.cat, price: l.price, qty: l.qty, ...(l.note && l.note.trim() ? { note: l.note.trim().slice(0, 150) } : {}) })),
     subtotal: P.sub, discount: P.d + P.rd, code: P.kind === 'code' ? P.label : '', discLabel: P.label || '', discKind: P.kind || '', offerId: P.oid || '', couponId: P.cid || '',
     rewardId: rw ? rw.id : '', rewardName: rw ? rw.name : '', rewardType: rw ? rw.type : '', rewardDisc: P.rd, pointsUsed: rw ? +rw.pts : 0,
     fee: P.fee, total: P.total, pay: 'cash', note: (co.note || '').trim(), gift: !!co.gift, giftMsg: co.gift ? (co.giftMsg || '').trim() : '', when: co.when === 'later' ? co.whenAt : '',
@@ -561,7 +562,7 @@ async function confirmOrder() {
   const money = (n) => fmt(n) + ' ج.م';
   const msg = [
     '🛍️ طلب جديد رقم #' + orderNo, ' ',
-    '📦 الأصناف:', ...order.items.map(i => '• ' + i.name + (i.size ? ' (' + i.size + ')' : '') + ' × ' + i.qty + ' = ' + money(i.price * i.qty)), ' ',
+    '📦 الأصناف:', ...order.items.map(i => '• ' + i.name + (i.size ? ' (' + i.size + ')' : '') + ' × ' + i.qty + ' = ' + money(i.price * i.qty) + (i.note ? '\n   📝 ' + i.note : '')), ' ',
     '💰 المجموع: ' + money(order.subtotal),
     order.discount > 0 ? '🏷️ الخصم: -' + money(order.discount) + (order.discLabel ? ' (' + order.discLabel + ')' : '') : '',
     !pick ? '🚚 التوصيل: ' + (order.fee > 0 ? money(order.fee) : 'مجاني') : '',
@@ -935,6 +936,7 @@ const ACT = {
   pfav: () => toggleFav(PD.id),
   method: (el) => { syncForm(); co.method = el.dataset.v; cartView(); },
   cq: (el) => { syncForm(); const c = cart[+el.dataset.i], p = byId(c.id), q = c.qty + +el.dataset.d; if (q < 1) return; if (p.stock != null && q > p.stock) return toast('الكمية المتاحة ' + p.stock + ' فقط'); c.qty = q; saveCart(); cartView(); },
+  cnote: (el) => { syncForm(); const c = cart[+el.dataset.i]; if (!c) return; c.note = ''; saveCart(); cartView(); const x = document.querySelector('.inote[data-i="' + el.dataset.i + '"]'); if (x) x.focus(); },
   cdel: (el) => { syncForm(); cart.splice(+el.dataset.i, 1); saveCart(); cartView(); },
   cclear: () => { cart = []; saveCart(); cartView(); },
   apply: applyCode, confirm: confirmOrder
@@ -1078,6 +1080,7 @@ RULES.push([/^(\d+) منتج في سلتك$/, '$1 items in your cart']);
 Object.assign(D, { 'تمت الإضافة للسلة': 'Added to cart', 'إتمام الشراء الآن': 'Checkout now', 'تابع التسوق': 'Continue shopping' });
 Object.assign(D, { '📍 حدد موقعي تلقائيًا': '📍 Locate me automatically', 'جاري تحديد موقعك...': 'Locating you...', 'تم تحديد موقعك ✓ كمّل رقم العمارة والدور': 'Location set ✓ add building and floor', 'تم تسجيل موقعك ✓ اكتب العنوان بالتفصيل': 'Location saved ✓ add the full address', 'تم تسجيل موقعك على الخريطة — راجع العنوان وكمّل رقم العمارة والدور': 'Location saved — check the address and add building and floor' });
 Object.assign(D, { 'تصميم وتطوير': 'Designed & developed by', 'هل تريد موقعًا إلكترونيًا احترافيًا لمشروعك؟': 'Want a professional website for your business?', 'تواصل عبر واتساب': 'Chat on WhatsApp' });
+Object.assign(D, { '✎ أضف ملاحظة': '✎ Add a note', 'ملاحظة على المنتج (اختياري)': 'Note for this item (optional)' });
 function T(t) { if (D[t] !== undefined) return D[t]; if (PEN[t]) return PEN[t]; for (const [re, to] of RULES) if (re.test(t)) return t.replace(re, to); return t; }
 function tr(root) {                                  // بيترجم النصوص لو اللغة إنجليزي (الرسم دايمًا بيبدأ عربي)
   if (lang !== 'en' || !root) return;
